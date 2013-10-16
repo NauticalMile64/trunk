@@ -22,6 +22,7 @@ void Ip2_BubbleMat_BubbleMat_BubblePhys::go(const shared_ptr<Material>& m1, cons
 	*/
 }
 
+
 /********************** BubblePhys ****************************/
 void BubblePhys::computeCoeffs(Real pctMaxForce, Real surfaceTension)
 {
@@ -64,6 +65,9 @@ Real BubblePhys::computeForce(Real penetrationDepth, Real surfaceTension, Real r
 	  return phys->coeffA*exp(phys->coeffB*separation);
 	}
 }
+
+
+
 
 /********************** Law2_ScGeom_BubblePhys_Bubble ****************************/
 CREATE_LOGGER(Law2_ScGeom_BubblePhys_Bubble);
