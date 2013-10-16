@@ -45,7 +45,7 @@ Real BubblePhys::computeForce(Real penetrationDepth, Real surfaceTension, Real r
 	  Real g = 0.0;
 	  Real ret = fN;
 	  int i = 0;
-	  do {
+	  do {				//[Chan2010], Loop solves modified form of equation (25) using Newton-Raphson method
 		  retOld = ret;
 		  
 		  g = log(ret*c2);
@@ -60,7 +60,7 @@ Real BubblePhys::computeForce(Real penetrationDepth, Real surfaceTension, Real r
 	  } while (residual > newtonTol);
 	  return ret;
 	}
-	else {
+	else {				//Artificial Extension of [Chan2010] equation 25, will be explained in future publication
 	  return phys->coeffA*exp(phys->coeffB*separation);
 	}
 }
