@@ -11,49 +11,41 @@ void Ip2_BubbleMat_BubbleMat_BubblePhys::go(const shared_ptr<Material>& m1, cons
 	// phys already exists
 	if (interaction->phys) return;
 	
-	/*
 	shared_ptr<BubblePhys> phys(new BubblePhys());
 	interaction->phys = phys;
-	BubbleMat* mat1 = YADE_CAST<BubbleMat*>(m1.get());
-	BubbleMat* mat2 = YADE_CAST<BubbleMat*>(m2.get());
-
-	// averaging over both materials
-	phys->surfaceTension = .5*(mat1->surfaceTension + mat2->surfaceTension);
-	*/
 }
 
 /********************** BubblePhys ****************************/
-void BubblePhys::computeCoeffs(Real pctMaxForce, Real surfaceTension)
+CREATE_LOGGER(BubblePhys);
+void BubblePhys::computeCoeffs(Real pctMaxForce, Real surfaceTension, Real c1)
 {
-	    Real c1 = 2*Mathr::PI*surfaceTension;
 	    Real Fmax = pctMaxForce*c1*rAvg;
-	    Dmax = pctMaxForce*rAvg*log(pctMaxForce/4);
-	    Real dfdd = c1/(log(pctMaxForce/4)+1);
+	    Real logPct = log(pctMaxForce/4);
+	    Dmax = pctMaxForce*rAvg*logPct;
+	    Real dfdd = c1/(logPct+1);
 	    coeffB = dfdd/Fmax;
 	    coeffA = Fmax/exp(coeffB*Dmax);
+	    fN = 0.1*Fmax;
 }
 
-CREATE_LOGGER(BubblePhys);
-Real BubblePhys::computeForce(Real penetrationDepth, Real surfaceTension, Real rAvg, int newtonIter, Real newtonTol, Real fN, BubblePhys* phys) {
-	if (penetrationDepth <= 0.0) { return 0.0; }
+Real BubblePhys::computeForce(Real separation, Real surfaceTension, Real rAvg, int newtonIter, Real newtonTol, Real c1, Real fN, BubblePhys* phys) {
 
-	Real separation = -penetrationDepth;
 	if (separation >= phys->Dmax) {
-	  Real f,df,retOld,residual;
-	  Real c1 = 2*Mathr::PI*surfaceTension;
+	  Real f,df,g,retOld,residual;
 	  Real c2 = 1./(4*c1*rAvg);
-	  Real g = 0.0;
 	  Real ret = fN;
 	  int i = 0;
 	  do {				//[Chan2010], Loop solves modified form of equation (25) using Newton-Raphson method
 		  retOld = ret;
-		  
 		  g = log(ret*c2);
 		  f = separation*c1 - ret*g;
 		  df = g+1;
 		  ret += f/df;
-		  
-		  residual = fabs(ret - retOld)/retOld;
+		  if(ret <= 0.0){	//Need to make sure ret > 0, otherwise the next iteration will try to evaluate the natural logarithm of a negative number, which results in NaN
+		    ret = 0.9*fabs(ret);
+		    residual = newtonTol*2;	//Also, if, by chance, retOld = 0.9*ret it would cause the loop to exit based on the boolean residual > newtonTol, so we force the next iteration by setting residual = newtonTol*2
+		  }	
+		  else {residual = fabs(ret - retOld)/retOld;}
 		  if (i++ > newtonIter) {
 			  throw runtime_error("BubblePhys::computeForce: no convergence\n");
 		  }
@@ -72,20 +64,20 @@ void Law2_ScGeom_BubblePhys_Bubble::go(shared_ptr<IGeom>& _geom, shared_ptr<IPhy
 	ScGeom* geom=static_cast<ScGeom*>(_geom.get());
 	BubblePhys* phys=static_cast<BubblePhys*>(_phys.get());
 	
-	if(!I->isReal()) return;
-	if(geom->penetrationDepth <0) {
+	if(geom->penetrationDepth <= 0.0) {
 		scene->interactions->requestErase(I);
 		return;
 	}
 	
 	if (I->isFresh(scene)) {
+		c1 = 2*Mathr::PI*surfaceTension;
 		phys->rAvg = .5*(geom->refR1 + geom->refR2);
-		phys->computeCoeffs(pctMaxForce,surfaceTension);
-		phys->fN = 1e-9;
+		phys->computeCoeffs(pctMaxForce,surfaceTension,c1);
 	}
 
 	Real &fN = phys->fN;
-	fN = phys->computeForce(geom->penetrationDepth, surfaceTension, phys->rAvg, phys->newtonIter, phys->newtonTol, phys->fN, phys);
+	fN = phys->computeForce(-geom->penetrationDepth, surfaceTension, phys->rAvg, phys->newtonIter, phys->newtonTol, c1, fN, phys);
+	phys->fN = fN;
 	Vector3r &normalForce = phys->normalForce;
 	normalForce = fN*geom->normal;
 

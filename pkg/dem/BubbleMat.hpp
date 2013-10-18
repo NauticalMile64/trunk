@@ -26,13 +26,13 @@ REGISTER_SERIALIZABLE(BubbleMat);
 class BubblePhys : public IPhys {
 	private:
 	  
+	//Real c1; //Coefficient of convenience
 	Real coeffA,coeffB; //Coefficents for artificial curve
-	Real Dmax; //Maximum penetrationDepth of the bubbles before the force displacement curve changes to an artificial exponential curve
   
 	public:
 
-	void computeCoeffs(Real pctMaxForce,Real surfaceTension);
-	static Real computeForce(Real penetrationDepth, Real surfaceTension, Real rAvg, int newtonIter, Real newtonTol, Real fN, BubblePhys* phys);
+	void computeCoeffs(Real pctMaxForce,Real surfaceTension, Real c1);
+	static Real computeForce(Real separation, Real surfaceTension, Real rAvg, int newtonIter, Real newtonTol, Real c1, Real fN, BubblePhys* phys);
 
 	virtual ~BubblePhys(){};
 	YADE_CLASS_BASE_DOC_ATTRS_CTOR_PY(BubblePhys,IPhys,"Physics of bubble-bubble interactions, for use with BubbleMat",
@@ -40,6 +40,7 @@ class BubblePhys : public IPhys {
 		//((Real,surfaceTension,NaN,,"Surface tension of the surrounding liquid"))
 		((Real,fN,NaN,,"Contact normal force"))
 		((Real,rAvg,NaN,,"Average radius of the two interacting bubbles"))
+		((Real,Dmax,NaN,,"Maximum penetrationDepth of the bubbles before the force displacement curve changes to an artificial exponential curve"))
 		((Real,newtonIter,50,,"Maximum number of force iterations allowed"))
 		((Real,newtonTol,1e-6,,"Convergence criteria for force iterations"))
 		,
@@ -69,6 +70,10 @@ REGISTER_SERIALIZABLE(Ip2_BubbleMat_BubbleMat_BubblePhys);
 
 /********************** Law2_ScGeom_BubblePhys_Bubble ****************************/
 class Law2_ScGeom_BubblePhys_Bubble : public LawFunctor{
+	private:
+	  
+	  Real c1; //Coeff used for many contacts
+  
 	public:
 	void go(shared_ptr<IGeom>& _geom, shared_ptr<IPhys>& _phys, Interaction* interaction);
 	FUNCTOR2D(GenericSpheresContact,BubblePhys);
