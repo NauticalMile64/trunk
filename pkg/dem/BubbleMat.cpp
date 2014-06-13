@@ -52,7 +52,7 @@ Real BubblePhys::computeForce(Real separation, Real surfaceTension, Real rAvg, i
 	  } while (residual > newtonTol);
 	  return ret;
 	}
-	else {				//Artificial Extension of [Chan2010] equation 25, will be explained in future publication
+	else {				//Artificial Extension of [Chan2010] equation 25 to approximiate behaviour outside the valid regime (large penetration cases)
 	  return phys->coeffA*exp(phys->coeffB*separation);
 	}
 }
