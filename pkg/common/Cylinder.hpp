@@ -1,3 +1,6 @@
+// 2011 © Bruno Chareyre <bruno.chareyre@hmg.inpg.fr>
+// 2012 © Kneib Francois <francois.kneib@irstea.fr>
+
 #pragma once
 #include<yade/pkg/common/Dispatching.hpp>
 #include<yade/core/Shape.hpp>
@@ -88,7 +91,7 @@ class ChainedState: public State{
 		/*py*/
 // 		.def_readwrite("chains",&ChainedState::chains,"documentation")
 		.def_readwrite("currentChain",&ChainedState::currentChain,"Current active chain (where newly created chained bodies will be appended).")
-		.def("addToChain",&ChainedState::addToChain,(python::arg("bodyId")),"Add body to current active chain")
+		.def("addToChain",&ChainedState::addToChain,(boost::python::arg("bodyId")),"Add body to current active chain")
 	);
 	REGISTER_CLASS_INDEX(ChainedState,State);
 };

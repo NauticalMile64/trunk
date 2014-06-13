@@ -11,7 +11,7 @@ except ImportError:
 	from miniEigen import *
 
 def textExt(fileName,format='x_y_z_r',shift=Vector3.Zero,scale=1.0,**kw):
-	"""Load sphere coordinates from file in specific format, create spheres, insert them to the simulation.
+	"""Load sphere coordinates from file in specific format, returns a list of corresponding bodies; that may be inserted to the simulation with O.bodies.append().
 	
 	:param str filename: file name
 	:param str format: the name of output format. Supported `x_y_z_r`(default), `x_y_z_r_matId`
@@ -47,9 +47,51 @@ def textExt(fileName,format='x_y_z_r',shift=Vector3.Zero,scale=1.0,**kw):
 		else:
 			raise RuntimeError("Please, specify a correct format output!");
 	return ret
+  
+def textClumps(fileName,shift=Vector3.Zero,discretization=0,orientation=Quaternion((0,1,0),0.0),scale=1.0,**kw):
+	"""Load clumps-members from file, insert them to the simulation.
+	
+	:param str filename: file name
+	:param str format: the name of output format. Supported `x_y_z_r`(default), `x_y_z_r_clumpId`
+	:param [float,float,float] shift: [X,Y,Z] parameter moves the specimen.
+	:param float scale: factor scales the given data.
+	:param \*\*kw: (unused keyword arguments) is passed to :yref:`yade.utils.sphere`
+	:returns: list of spheres.
+
+	Lines starting with # are skipped
+	"""
+	infile = open(fileName,"r")
+	lines = infile.readlines()
+	infile.close()
+	ret=[]
+	
+	curClump=[]
+	newClumpId = -1
+	
+	for line in lines:
+		data = line.split()
+		if (data[0][0] == "#"): continue
+		pos = orientation*Vector3(float(data[0]),float(data[1]),float(data[2]))
+	
+		if (newClumpId<0 or newClumpId==int(data[4])):
+			idD = curClump.append(utils.sphere(shift+scale*pos,scale*float(data[3]),**kw))
+			newClumpId = int(data[4])
+		else:
+			newClumpId = int(data[4])
+			ret.append(O.bodies.appendClumped(curClump,discretization=discretization))
+			curClump=[]
+			idD = curClump.append(utils.sphere(shift+scale*pos,scale*float(data[3]),**kw))
+	
+	if (len(curClump)<>0):
+		ret.append(O.bodies.appendClumped(curClump,discretization=discretization))
+	
+	# Set the mask to a clump the same as the first member of it
+	for i in range(len(ret)):
+		O.bodies[ret[i][0]].mask = O.bodies[ret[i][1][0]].mask
+	return ret
 
 def text(fileName,shift=Vector3.Zero,scale=1.0,**kw):
-	"""Load sphere coordinates from file, create spheres, insert them to the simulation.
+	"""Load sphere coordinates from file, returns a list of corresponding bodies; that may be inserted to the simulation with O.bodies.append().
 
 	:param string filename: file which has 4 colums [x, y, z, radius].
 	:param [float,float,float] shift: [X,Y,Z] parameter moves the specimen.
@@ -98,7 +140,7 @@ def gts(meshfile,shift=(0,0,0),scale=1.0,**kw):
 	surf.translate(shift) 
 	yade.pack.gtsSurface2Facets(surf,**kw)
 
-def gmsh(meshfile="file.mesh",shift=Vector3.Zero,scale=1.0,orientation=Quaternion.Identity,**kw):
+def gmsh(meshfile="file.mesh",shift=Vector3.Zero,scale=1.0,orientation=Quaternion((0,1,0),0.0),**kw):
 	""" Imports geometry from mesh file and creates facets.
 
 	:Parameters:
@@ -169,7 +211,7 @@ def gmsh(meshfile="file.mesh",shift=Vector3.Zero,scale=1.0,orientation=Quaternio
 		ret.append(utils.facet((nodelistVector3[i[1]],nodelistVector3[i[2]],nodelistVector3[i[3]]),**kw))
 	return ret
 
-def gengeoFile(fileName="file.geo",shift=Vector3.Zero,scale=1.0,orientation=Quaternion.Identity,**kw):
+def gengeoFile(fileName="file.geo",shift=Vector3.Zero,scale=1.0,orientation=Quaternion((0,1,0),0.0),**kw):
 	""" Imports geometry from LSMGenGeo .geo file and creates spheres. 
 	Since 2012 the package is available in Debian/Ubuntu and known as python-demgengeo
 	http://packages.qa.debian.org/p/python-demgengeo.html

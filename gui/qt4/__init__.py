@@ -1,6 +1,11 @@
 # encoding: utf-8
 import yade.runtime
-if not yade.runtime.hasDisplay: raise ImportError("Connecting to DISPLAY at Yade startup failed, unable to activate the qt4 interface.")
+if not yade.runtime.hasDisplay:
+	msg = "Connecting to DISPLAY at Yade startup failed, unable to activate the qt4 interface."
+	import os
+	if 'YADE_BATCH' in os.environ:
+		msg += "\nDo not import qt when running in batch mode."
+	raise ImportError(msg)
 
 from PyQt4.QtGui import *
 from PyQt4 import QtCore
@@ -17,13 +22,13 @@ maxWebWindows=1
 "Number of webkit windows that will be cycled to show help on clickable objects"
 webWindows=[] 
 "holds instances of QtWebKit windows; clicking an url will open it in the window that was the least recently updated"
-sphinxOnlineDocPath='https://www.yade-dem.org/sphinx/'
+sphinxOnlineDocPath='https://www.yade-dem.org/doc/'
 "Base URL for the documentation. Packaged versions should change to the local installation directory."
 
 
 import os.path
 # find if we have docs installed locally from package
-sphinxLocalDocPath=yade.config.prefix+'/share/doc/yade'+yade.config.suffix+'/html/'
+sphinxLocalDocPath=yade.config.prefix+'/share/doc/yade'+yade.config.suffix+'-doc/html/'
 sphinxBuildDocPath=yade.config.sourceRoot+'/doc/sphinx/_build/html/'
 # we prefer the packaged documentation for this version, if installed
 if   os.path.exists(sphinxLocalDocPath+'/index.html'): sphinxPrefix='file://'+sphinxLocalDocPath

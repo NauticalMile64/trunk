@@ -9,9 +9,9 @@
 #include<boost/any.hpp>
 #include<boost/lambda/lambda.hpp>
 
-#include<yade/lib/base/Math.hpp>
-#include<yade/lib/base/Logging.hpp>
-#include<yade/core/Body.hpp>
+#include "yade/lib/base/Math.hpp"
+#include "yade/lib/base/Logging.hpp"
+#include "yade/core/Body.hpp"
 
 #include<boost/function.hpp>
 
@@ -47,7 +47,7 @@ class Shop{
 		static shared_ptr<FrictMat> defaultGranularMat();
 
 		//! Return vector of pairs (center,radius) loaded from a file with numbers inside
-		static vector<tuple<Vector3r,Real,int> > loadSpheresFromFile(const string& fname,Vector3r& minXYZ, Vector3r& maxXYZ, Vector3r* cellSize=NULL);
+		static vector<boost::tuple<Vector3r,Real,int> > loadSpheresFromFile(const string& fname,Vector3r& minXYZ, Vector3r& maxXYZ, Vector3r* cellSize=NULL);
 		
 		//! Save spheres in the current simulation into a text file
 		static void saveSpheresToFile(string fileName);
@@ -145,7 +145,7 @@ class Shop{
 		static void setContactFriction(Real angleRad);
 
 		//! Homothetic change of sizes of spheres and clumps
-		static void growParticles(Real multiplier, bool updateMass, bool dynamicOnly, unsigned int discretization, bool integrateInertia);
-
-
+		static void growParticles(Real multiplier, bool updateMass, bool dynamicOnly, unsigned int discretization);
+		//! Change of size of a single sphere or a clump
+		static void growParticle(Body::id_t bodyID, Real multiplier, bool updateMass);
 };

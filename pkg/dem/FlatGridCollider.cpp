@@ -11,7 +11,7 @@ CREATE_LOGGER(FlatGridCollider);
 
 bool FlatGridCollider::isActivated(){
 	// keep interactions trequested for deletion as potential (forget removal requests)
-	scene->interactions->clearPendingErase();
+// 	scene->interactions->clearPendingErase();
 	if(!newton) return true;
 	// handle verlet distance
 	fastestBodyMaxDist+=sqrt(newton->maxVelocitySq)*scene->dt;
@@ -21,7 +21,7 @@ bool FlatGridCollider::isActivated(){
 
 void FlatGridCollider::action(){
 	if(!newton){
-		FOREACH(const shared_ptr<Engine>& e, scene->engines){ newton=dynamic_pointer_cast<NewtonIntegrator>(e); if(newton) break; }
+		FOREACH(const shared_ptr<Engine>& e, scene->engines){ newton=boost::dynamic_pointer_cast<NewtonIntegrator>(e); if(newton) break; }
 		if(!newton){ throw runtime_error("FlatGridCollider: Unable to find NewtonIntegrator in engines."); }
 	}
 	fastestBodyMaxDist=0;

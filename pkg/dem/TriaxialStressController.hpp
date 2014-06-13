@@ -99,9 +99,9 @@ class TriaxialStressController : public BoundaryController
 		((Real,height,0,Attr::readonly,"size of the box (1-axis) |yupdate|"))
 		((Real,width,0,Attr::readonly,"size of the box (0-axis) |yupdate|"))
 		((Real,depth,0,Attr::readonly,"size of the box (2-axis) |yupdate|"))
-		((Real,height0,0,Attr::readonly,"Reference size for strain definition. See :yref:`TriaxialStressController::height`"))
-		((Real,width0,0,Attr::readonly,"Reference size for strain definition. See :yref:`TriaxialStressController::width`"))
-		((Real,depth0,0,Attr::readonly,"Reference size for strain definition. See :yref:`TriaxialStressController::depth`"))
+		((Real,height0,0,,"Reference size for strain definition. See :yref:`TriaxialStressController::height`"))
+		((Real,width0,0,,"Reference size for strain definition. See :yref:`TriaxialStressController::width`"))
+		((Real,depth0,0,,"Reference size for strain definition. See :yref:`TriaxialStressController::depth`"))
 		
 		((Real,goal1,0,,"prescribed stress/strain rate on axis 1, as defined by :yref:`TriaxialStressController::stressMask` (see also :yref:`TriaxialStressController::isAxisymetric`)"))
 		((Real,goal2,0,,"prescribed stress/strain rate on axis 2, as defined by :yref:`TriaxialStressController::stressMask` (see also :yref:`TriaxialStressController::isAxisymetric`)"))
@@ -146,7 +146,7 @@ class TriaxialStressController : public BoundaryController
 		.def_readonly("max_vel1",&TriaxialStressController::max_vel1,"see :yref:`TriaxialStressController::max_vel` |ycomp|")
 		.def_readonly("max_vel2",&TriaxialStressController::max_vel2,"see :yref:`TriaxialStressController::max_vel` |ycomp|")
 		.def_readonly("max_vel3",&TriaxialStressController::max_vel3,"see :yref:`TriaxialStressController::max_vel` |ycomp|")
-		.def("stress",&TriaxialStressController::getStress,(python::arg("id")),"Return the mean stress vector acting on boundary 'id', with 'id' between 0 and 5.")
+		.def("stress",&TriaxialStressController::getStress,(boost::python::arg("id")),"Return the mean stress vector acting on boundary 'id', with 'id' between 0 and 5.")
 		)
 		DECLARE_LOGGER;
 };

@@ -46,9 +46,9 @@ class State: public Serializable, public Indexable{
 
 		// python access functions: pos and ori are references to inside Se3r and cannot be pointed to directly
 		Vector3r pos_get() const {return pos;}
-		void pos_set(const Vector3r& p) {pos=p;}
+		void pos_set(const Vector3r p) {pos=p;}
 		Quaternionr ori_get() const {return ori; }
-		void ori_set(const Quaternionr& o){ori=o;}
+		void ori_set(const Quaternionr o){ori=o;}
 
 	YADE_CLASS_BASE_DOC_ATTRS_INIT_CTOR_PY(State,Serializable,"State of a body (spatial configuration, internal variables).",
 		((Se3r,se3,Se3r(Vector3r::Zero(),Quaternionr::Identity()),,"Position and orientation as one object."))
@@ -73,7 +73,7 @@ class State: public Serializable, public Indexable{
 		.add_property("pos",&State::pos_get,&State::pos_set,"Current position.")
 		.add_property("ori",&State::ori_get,&State::ori_set,"Current orientation.")
 		.def("displ",&State::displ,"Displacement from :yref:`reference position<State.refPos>` (:yref:`pos<State.pos>` - :yref:`refPos<State.refPos>`)")
-		.def("rot",&State::rot,"Rotation from :yref:`reference orientation<State.refPos>` (as rotation vector)")
+		.def("rot",&State::rot,"Rotation from :yref:`reference orientation<State.refOri>` (as rotation vector)")
 	);
 	REGISTER_INDEX_COUNTER(State);
 	DECLARE_LOGGER;

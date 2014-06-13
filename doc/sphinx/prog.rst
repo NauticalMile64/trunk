@@ -62,7 +62,7 @@ declare features that are necessary for this file to be compiled::
 	YADE_REQUIRE_FEATURE(vtk);
 	YADE_REQUIRE_FEATURE(gts);
 
-This file will be compiled only if *both* ``vtk`` and ``gts`` features are enabled. 
+This file will be compiled only if *both* ``VTK`` and ``GTS`` features are enabled. 
 Depending on current feature set, only selection of plugins will be compiled.
 
 It is possible to disable compilation of a file by requiring any non-existent feature, such as::
@@ -97,7 +97,7 @@ Integrated Development Environment and other tools
 ---------------------------------------------------
 A frequently used IDE is Kdevelop. We recommend using this software for navigating 
 in the sources, compiling and debugging. Other useful tools for debugging and 
-profiling are Valgrind and KCachegrind. A series a wiki pages are dedicated to 
+profiling are Valgrind and KCachegrind. A series of wiki pages is dedicated to 
 these tools in the `development section <https://yade-dem.org/wiki/Yade#Development>`__ of the wiki.
 
 Hosting and versioning

@@ -23,6 +23,7 @@ void Law2_ScGeom_JCFpmPhys_JointedCohesiveFrictionalPM::go(shared_ptr<IGeom>& ig
 
 	Real Dtensile=phys->FnMax/phys->kn;
 	
+	string fileCracks = "cracks_"+Key+".txt";
 	/// Defines the interparticular distance used for computation
 	Real D = 0;
 
@@ -40,8 +41,8 @@ void Law2_ScGeom_JCFpmPhys_JointedCohesiveFrictionalPM::go(shared_ptr<IGeom>& ig
 	}
 	
 	if ( smoothJoint && phys->isOnJoint ) {
-	  if ( phys->more || ( phys->jointCumulativeSliding > (2*min(geom->radius1,geom->radius2)) ) ) { 
-	    scene->interactions->requestErase(contact->getId1(),contact->getId2()); return; 
+	  if ( phys->more || ( phys->jointCumulativeSliding > (2*min(geom->radius1,geom->radius2)) ) ) {
+	    scene->interactions->requestErase(contact); return; 
 	    } else { 
 	    D = phys->initD - abs((b1->state->pos - b2->state->pos).dot(phys->jointNormal)); 
 	    }
@@ -50,8 +51,11 @@ void Law2_ScGeom_JCFpmPhys_JointedCohesiveFrictionalPM::go(shared_ptr<IGeom>& ig
 	}
 
 	/* Determination of interaction */
-	if (D < 0) { //spheres do not touch 
-	  if ( !phys->isCohesive ) { scene->interactions->requestErase(contact->getId1(),contact->getId2()); return; }
+	if (D < 0) { //spheres do not "touch" !
+	  if ( !phys->isCohesive ) 
+	  { 
+	    scene->interactions->requestErase(contact); return;
+	  }
 	  
 	  if ( phys->isCohesive && (phys->FnMax>0) && (abs(D)>Dtensile) ) {
 	    
@@ -60,21 +64,21 @@ void Law2_ScGeom_JCFpmPhys_JointedCohesiveFrictionalPM::go(shared_ptr<IGeom>& ig
 	    JCFpmState* st2=dynamic_cast<JCFpmState*>(b2->state.get());
 	    st1->tensBreak+=1;
 	    st2->tensBreak+=1;
-	    //st1->tensBreakRel+=1.0/st1->noIniLinks;
-	    //st2->tensBreakRel+=1.0/st2->noIniLinks;
+	    st1->tensBreakRel+=1.0/st1->noIniLinks;
+	    st2->tensBreakRel+=1.0/st2->noIniLinks;
 	    
     	    // create a text file to record properties of the broken bond (iteration, position, type (tensile), cross section and contact normal orientation)
 	    if (recordCracks){
-	      std::ofstream file ("cracks.txt", !cracksFileExist ? std::ios::trunc : std::ios::app);
+	      std::ofstream file (fileCracks.c_str(), !cracksFileExist ? std::ios::trunc : std::ios::app);
 	      if(file.tellp()==0){ file <<"i p0 p1 p2 t s norm0 norm1 norm2"<<endl; }
 	      Vector3r crackNormal=Vector3r::Zero();
 	      if ((smoothJoint) && (phys->isOnJoint)) { crackNormal=phys->jointNormal; } else {crackNormal=geom->normal;}
-	      file << lexical_cast<string> ( scene->iter )<<" "<< lexical_cast<string> ( geom->contactPoint[0] ) <<" "<< lexical_cast<string> ( geom->contactPoint[1] ) <<" "<< lexical_cast<string> ( geom->contactPoint[2] ) <<" "<< 0 <<" "<< lexical_cast<string> ( 0.5*(geom->radius1+geom->radius2) ) <<" "<< lexical_cast<string> ( crackNormal[0] ) <<" "<< lexical_cast<string> ( crackNormal[1] ) <<" "<< lexical_cast<string> ( crackNormal[2] ) << endl;
+	      file << boost::lexical_cast<string> ( scene->iter )<<" "<< boost::lexical_cast<string> ( geom->contactPoint[0] ) <<" "<< boost::lexical_cast<string> ( geom->contactPoint[1] ) <<" "<< boost::lexical_cast<string> ( geom->contactPoint[2] ) <<" "<< 0 <<" "<< boost::lexical_cast<string> ( 0.5*(geom->radius1+geom->radius2) ) <<" "<< boost::lexical_cast<string> ( crackNormal[0] ) <<" "<< boost::lexical_cast<string> ( crackNormal[1] ) <<" "<< boost::lexical_cast<string> ( crackNormal[2] ) << endl;
 	    }
 	    cracksFileExist=true;
 
 	    // delete contact
-	    scene->interactions->requestErase(contact->getId1(),contact->getId2()); return;
+	    scene->interactions->requestErase(contact); return;
 	  }
 	}	  
 	
@@ -105,12 +109,15 @@ void Law2_ScGeom_JCFpmPhys_JointedCohesiveFrictionalPM::go(shared_ptr<IGeom>& ig
 	  
 	}
 	
-	/* Morh-Coulomb criterion */
+	/* Mohr-Coulomb criterion */
 	Real maxFs = phys->FsMax + Fn*phys->tanFrictionAngle;
 	Real scalarShearForce = shearForce.norm();
 	  
 	if (scalarShearForce > maxFs) {
-	  shearForce*=maxFs/scalarShearForce;
+	  if (scalarShearForce != 0)
+	    shearForce*=maxFs/scalarShearForce;
+	  else
+	    shearForce=Vector3r::Zero();
 	  if ((smoothJoint) && (phys->isOnJoint)) {phys->dilation=phys->jointCumulativeSliding*phys->tanDilationAngle-D; phys->initD+=(jointSliding*phys->tanDilationAngle);}
 	  // take into account shear cracking -> are those lines critical? -> TODO testing with and without
 	  if ( phys->isCohesive ) { 
@@ -120,23 +127,26 @@ void Law2_ScGeom_JCFpmPhys_JointedCohesiveFrictionalPM::go(shared_ptr<IGeom>& ig
 	    JCFpmState* st2=dynamic_cast<JCFpmState*>(b2->state.get());
 	    st1->shearBreak+=1;
 	    st2->shearBreak+=1;
-	    //st1->shearBreakRel+=1.0/st1->noIniLinks;
-	    //st2->shearBreakRel+=1.0/st2->noIniLinks;
+	    st1->shearBreakRel+=1.0/st1->noIniLinks;
+	    st2->shearBreakRel+=1.0/st2->noIniLinks;
 
 	    // create a text file to record properties of the broken bond (iteration, position, type (shear), cross section and contact normal orientation)
 	    if (recordCracks){
-	      std::ofstream file ("cracks.txt", !cracksFileExist ? std::ios::trunc : std::ios::app);
+	      std::ofstream file (fileCracks.c_str(), !cracksFileExist ? std::ios::trunc : std::ios::app);
 	      if(file.tellp()==0){ file <<"i p0 p1 p2 t s norm0 norm1 norm2"<<endl; }
 	      Vector3r crackNormal=Vector3r::Zero();
 	      if ((smoothJoint) && (phys->isOnJoint)) { crackNormal=phys->jointNormal; } else {crackNormal=geom->normal;}
-	      file << lexical_cast<string> ( scene->iter )<<" "<< lexical_cast<string> ( geom->contactPoint[0] ) <<" "<< lexical_cast<string> ( geom->contactPoint[1] ) <<" "<< lexical_cast<string> ( geom->contactPoint[2] ) <<" "<< 1 <<" "<< lexical_cast<string> ( 0.5*(geom->radius1+geom->radius2) ) <<" "<< lexical_cast<string> ( crackNormal[0] ) <<" "<< lexical_cast<string> ( crackNormal[1] ) <<" "<< lexical_cast<string> ( crackNormal[2] ) << endl;
+	      file << boost::lexical_cast<string> ( scene->iter )<<" "<< boost::lexical_cast<string> ( geom->contactPoint[0] ) <<" "<< boost::lexical_cast<string> ( geom->contactPoint[1] ) <<" "<< boost::lexical_cast<string> ( geom->contactPoint[2] ) <<" "<< 1 <<" "<< boost::lexical_cast<string> ( 0.5*(geom->radius1+geom->radius2) ) <<" "<< boost::lexical_cast<string> ( crackNormal[0] ) <<" "<< boost::lexical_cast<string> ( crackNormal[1] ) <<" "<< boost::lexical_cast<string> ( crackNormal[2] ) << endl;
 	    }
 	    cracksFileExist=true;
 	    
 	    // delete contact if in tension, set the contact properties to friction if in compression
-	    if ( D < 0 ) {
-	      scene->interactions->requestErase(contact->getId1(),contact->getId2()); return;
-	    } else {
+	    if ( D < 0 )
+	    {
+	      scene->interactions->requestErase(contact); return;
+	    } 
+	    else 
+	    {
 	      phys->FnMax = 0;
 	      phys->FsMax = 0;
 	      phys->isCohesive=false;
@@ -175,14 +185,22 @@ void Ip2_JCFpmMat_JCFpmMat_JCFpmPhys::go(const shared_ptr<Material>& b1, const s
 
 	const shared_ptr<JCFpmMat>& yade1 = YADE_PTR_CAST<JCFpmMat>(b1);
 	const shared_ptr<JCFpmMat>& yade2 = YADE_PTR_CAST<JCFpmMat>(b2);
+	JCFpmState* st1=dynamic_cast<JCFpmState*>(Body::byId(interaction->getId1(),scene)->state.get());
+	JCFpmState* st2=dynamic_cast<JCFpmState*>(Body::byId(interaction->getId2(),scene)->state.get());
 	
 	shared_ptr<JCFpmPhys> contactPhysics(new JCFpmPhys()); 
 	
 	/* From material properties */
 	Real E1 	= yade1->young;
 	Real E2 	= yade2->young;
+	Real v1 	= yade1->poisson;
+	Real v2 	= yade2->poisson;
 	Real f1 	= yade1->frictionAngle;
 	Real f2 	= yade2->frictionAngle;
+	Real SigT1	= yade1->tensileStrength;
+	Real SigT2	= yade2->tensileStrength;
+	Real Coh1	= yade1->cohesion;
+	Real Coh2	= yade2->cohesion;
 
 	/* From interaction geometry */
 	Real R1= geom->radius1;
@@ -193,56 +211,81 @@ void Ip2_JCFpmMat_JCFpmMat_JCFpmPhys::go(const shared_ptr<Material>& b1, const s
 	
 	// frictional properties
 	contactPhysics->kn = 2.*E1*R1*E2*R2/(E1*R1+E2*R2);
-	contactPhysics->ks = alpha*contactPhysics->kn;
-	contactPhysics->frictionAngle = std::min(f1,f2); 
-	contactPhysics->tanFrictionAngle = std::tan(contactPhysics->frictionAngle);
+	if ( (v1==0)&&(v2==0) )
+	  contactPhysics->ks = 0;
+	else
+	  contactPhysics->ks = 2.*E1*R1*v1*E2*R2*v2/(E1*R1*v1+E2*R2*v2);
+	contactPhysics->tanFrictionAngle = std::tan(std::min(f1,f2));
 	
 	// cohesive properties
 	///to set if the contact is cohesive or not
-	if ((scene->iter < cohesiveTresholdIteration) && (tensileStrength>0 || cohesion>0) && (yade1->type == yade2->type)){ 
+	if ( ((cohesiveTresholdIteration < 0) || (scene->iter < cohesiveTresholdIteration)) && (std::min(SigT1,SigT2)>0 || std::min(Coh1,Coh2)>0) && (yade1->type == yade2->type)){ 
 	  contactPhysics->isCohesive=true;
-// 	  JCFpmState* st1=dynamic_cast<JCFpmState*>(Body::byId(interaction->getId1(),scene)->state.get());
-// 	  st1->noIniLinks++;
-// 	  JCFpmState* st2=dynamic_cast<JCFpmState*>(Body::byId(interaction->getId2(),scene)->state.get());
-// 	  st2->noIniLinks++;
+	  st1->noIniLinks++;
+	  st2->noIniLinks++;
 	}
 	
 	if ( contactPhysics->isCohesive ) {
-	  contactPhysics->FnMax = tensileStrength*contactPhysics->crossSection;
-	  contactPhysics->FsMax = cohesion*contactPhysics->crossSection;
+	  contactPhysics->FnMax = std::min(SigT1,SigT2)*contactPhysics->crossSection;
+	  contactPhysics->FsMax = std::min(Coh1,Coh2)*contactPhysics->crossSection;
 	}
 
 	/// +++ Jointed interactions ->NOTE: geom->normal is oriented from 1 to 2 / jointNormal from plane to sphere 
-	if ( yade1->onJoint && yade2->onJoint ) {
-
-		if ( (((yade1->jointNormal1.cross(yade2->jointNormal1)).norm()<0.1) && (yade1->jointNormal1.dot(yade2->jointNormal1)<0)) || (((yade1->jointNormal1.cross(yade2->jointNormal2)).norm()<0.1) && (yade1->jointNormal1.dot(yade2->jointNormal2)<0)) || (((yade1->jointNormal1.cross(yade2->jointNormal3)).norm()<0.1) && (yade1->jointNormal1.dot(yade2->jointNormal3)<0)) ) { contactPhysics->isOnJoint = true; contactPhysics->jointNormal = yade1->jointNormal1; }
-		else if ( (((yade1->jointNormal2.cross(yade2->jointNormal1)).norm()<0.1) && (yade1->jointNormal2.dot(yade2->jointNormal1)<0)) || (((yade1->jointNormal2.cross(yade2->jointNormal2)).norm()<0.1) && (yade1->jointNormal2.dot(yade2->jointNormal2)<0)) || (((yade1->jointNormal2.cross(yade2->jointNormal3)).norm()<0.1) && (yade1->jointNormal2.dot(yade2->jointNormal3)<0)) ) { contactPhysics->isOnJoint = true; contactPhysics->jointNormal = yade1->jointNormal2; }
-		else if ( (((yade1->jointNormal3.cross(yade2->jointNormal1)).norm()<0.1) && (yade1->jointNormal3.dot(yade2->jointNormal1)<0)) || (((yade1->jointNormal3.cross(yade2->jointNormal2)).norm()<0.1) && (yade1->jointNormal3.dot(yade2->jointNormal2)<0)) || (((yade1->jointNormal3.cross(yade2->jointNormal3)).norm()<0.1) && (yade1->jointNormal3.dot(yade2->jointNormal3)<0)) ) { contactPhysics->isOnJoint = true; contactPhysics->jointNormal = yade1->jointNormal3; }
-		else if ( (yade1->joint>3 || yade2->joint>3) && ( ( ((yade1->jointNormal1.cross(yade2->jointNormal1)).norm()>0.1) && ((yade1->jointNormal1.cross(yade2->jointNormal2)).norm()>0.1) && ((yade1->jointNormal1.cross(yade2->jointNormal3)).norm()>0.1) ) || ( ((yade1->jointNormal2.cross(yade2->jointNormal1)).norm()>0.1) && ((yade1->jointNormal2.cross(yade2->jointNormal2)).norm()>0.1) && ((yade1->jointNormal2.cross(yade2->jointNormal3)).norm()>0.1) ) || ( ((yade1->jointNormal3.cross(yade2->jointNormal1)).norm()>0.1) && ((yade1->jointNormal3.cross(yade2->jointNormal2)).norm()>0.1) && ((yade1->jointNormal3.cross(yade2->jointNormal3)).norm()>0.1) ) ) )  { contactPhysics->isOnJoint = true; contactPhysics->more = true; contactPhysics->jointNormal = geom->normal; }
+	if ( st1->onJoint && st2->onJoint )
+	{
+		if ( (((st1->jointNormal1.cross(st2->jointNormal1)).norm()<0.1) && (st1->jointNormal1.dot(st2->jointNormal1)<0)) || (((st1->jointNormal1.cross(st2->jointNormal2)).norm()<0.1) && (st1->jointNormal1.dot(st2->jointNormal2)<0)) || (((st1->jointNormal1.cross(st2->jointNormal3)).norm()<0.1) && (st1->jointNormal1.dot(st2->jointNormal3)<0)) )
+		{
+		  contactPhysics->isOnJoint = true;
+		  contactPhysics->jointNormal = st1->jointNormal1;
+		}
+		else if ( (((st1->jointNormal2.cross(st2->jointNormal1)).norm()<0.1) && (st1->jointNormal2.dot(st2->jointNormal1)<0)) || (((st1->jointNormal2.cross(st2->jointNormal2)).norm()<0.1) && (st1->jointNormal2.dot(st2->jointNormal2)<0)) || (((st1->jointNormal2.cross(st2->jointNormal3)).norm()<0.1) && (st1->jointNormal2.dot(st2->jointNormal3)<0)) )
+		{
+		  contactPhysics->isOnJoint = true;
+		  contactPhysics->jointNormal = st1->jointNormal2;
+		}
+		else if ( (((st1->jointNormal3.cross(st2->jointNormal1)).norm()<0.1) && (st1->jointNormal3.dot(st2->jointNormal1)<0)) || (((st1->jointNormal3.cross(st2->jointNormal2)).norm()<0.1) && (st1->jointNormal3.dot(st2->jointNormal2)<0)) || (((st1->jointNormal3.cross(st2->jointNormal3)).norm()<0.1) && (st1->jointNormal3.dot(st2->jointNormal3)<0)) )
+		{
+		  contactPhysics->isOnJoint = true;
+		  contactPhysics->jointNormal = st1->jointNormal3;
+		}
+		else if ( (st1->joint>3 || st2->joint>3) && ( ( ((st1->jointNormal1.cross(st2->jointNormal1)).norm()>0.1) && ((st1->jointNormal1.cross(st2->jointNormal2)).norm()>0.1) && ((st1->jointNormal1.cross(st2->jointNormal3)).norm()>0.1) ) || ( ((st1->jointNormal2.cross(st2->jointNormal1)).norm()>0.1) && ((st1->jointNormal2.cross(st2->jointNormal2)).norm()>0.1) && ((st1->jointNormal2.cross(st2->jointNormal3)).norm()>0.1) ) || ( ((st1->jointNormal3.cross(st2->jointNormal1)).norm()>0.1) && ((st1->jointNormal3.cross(st2->jointNormal2)).norm()>0.1) && ((st1->jointNormal3.cross(st2->jointNormal3)).norm()>0.1) ) ) )  {  contactPhysics->isOnJoint = true; contactPhysics->more = true; contactPhysics->jointNormal = geom->normal; }
 	}
 	
 	///to specify joint properties 
 	if ( contactPhysics->isOnJoint ) {
-			contactPhysics->frictionAngle = (jointFrictionAngle>=0 ? jointFrictionAngle : std::min(f1,f2)); 
-			contactPhysics->tanFrictionAngle = std::tan(contactPhysics->frictionAngle);
-			contactPhysics->kn = jointNormalStiffness*2.*R1*R2/(R1+R2);
-			contactPhysics->ks = jointShearStiffness*2.*R1*R2/(R1+R2); 
-			contactPhysics->dilationAngle = jointDilationAngle;
-			contactPhysics->tanDilationAngle = std::tan(contactPhysics->dilationAngle);
+			Real jf1 	= yade1->jointFrictionAngle;
+			Real jf2 	= yade2->jointFrictionAngle;
+			Real jkn1 	= yade1->jointNormalStiffness;
+			Real jkn2 	= yade2->jointNormalStiffness;
+			Real jks1 	= yade1->jointShearStiffness;
+			Real jks2 	= yade2->jointShearStiffness;
+			Real jdil1 	= yade1->jointDilationAngle;
+			Real jdil2 	= yade2->jointDilationAngle;
+			Real jcoh1 	= yade1->jointCohesion;
+			Real jcoh2 	= yade2->jointCohesion;
+			Real jSigT1	= yade1->jointTensileStrength;
+			Real jSigT2	= yade2->jointTensileStrength;
+			
+			contactPhysics->tanFrictionAngle = std::tan(std::min(jf1,jf2));
+			
+			//contactPhysics->kn = jointNormalStiffness*2.*R1*R2/(R1+R2); // very first expression from Luc
+			//contactPhysics->kn = (jkn1+jkn2)/2.0*2.*R1*R2/(R1+R2); // after putting jointNormalStiffness in material
+			contactPhysics->kn = ( jkn1 + jkn2 ) /2.0 * contactPhysics->crossSection; // for a size independant expression
+			contactPhysics->ks = ( jks1 + jks2 ) /2.0 * contactPhysics->crossSection; // for a size independant expression
+			
+			contactPhysics->tanDilationAngle = std::tan(std::min(jdil1,jdil2));
 		  
 			///to set if the contact is cohesive or not
-			if ((scene->iter < cohesiveTresholdIteration) && (jointCohesion>0 || jointTensileStrength>0)) {
+			if ( ((cohesiveTresholdIteration < 0) || (scene->iter < cohesiveTresholdIteration)) && (std::min(jcoh1,jcoh2)>0 || std::min(jSigT1,jSigT2)>0) ) {
 			  contactPhysics->isCohesive=true;
-// 			  JCFpmState* st1=dynamic_cast<JCFpmState*>(Body::byId(interaction->getId1(),scene)->state.get());
-// 			  st1->noIniLinks++;
-// 			  JCFpmState* st2=dynamic_cast<JCFpmState*>(Body::byId(interaction->getId2(),scene)->state.get());
-// 			  st2->noIniLinks++;
+			  st1->noIniLinks++;
+			  st2->noIniLinks++;
 			} 
 			else { contactPhysics->isCohesive=false; contactPhysics->FnMax=0; contactPhysics->FsMax=0; }
 		  
 			if ( contactPhysics->isCohesive ) {
-				contactPhysics->FnMax = jointTensileStrength*contactPhysics->crossSection;
-				contactPhysics->FsMax = jointCohesion*contactPhysics->crossSection;
+				contactPhysics->FnMax = std::min(jSigT1,jSigT2)*contactPhysics->crossSection;
+				contactPhysics->FsMax = std::min(jcoh1,jcoh2)*contactPhysics->crossSection;
 			}
 	}
 	interaction->phys = contactPhysics;

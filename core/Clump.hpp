@@ -61,7 +61,7 @@ class Clump: public Shape {
 		static void add(const shared_ptr<Body>& clump, const shared_ptr<Body>& subBody);
 		static void del(const shared_ptr<Body>& clump, const shared_ptr<Body>& subBody);
 		//! Recalculate physical properties of Clump.
-		static void updateProperties(const shared_ptr<Body>& clump, unsigned int discretization, bool integrateInertia);
+		static void updateProperties(const shared_ptr<Body>& clump, unsigned int discretization);
 		//! Calculate positions and orientations of members based on relative Se3; newton pointer (if non-NULL) calls NewtonIntegrator::saveMaximaVelocity
 		// done as template to avoid cross-dependency between clump and newton (not necessary if all plugins are linked together)
 		template<class IntegratorT>
@@ -97,7 +97,7 @@ class Clump: public Shape {
 		//! Recalculate body's inertia tensor in rotated coordinates.
 		static Matrix3r inertiaTensorRotate(const Matrix3r& I, const Quaternionr& rot);
 
-		python::dict members_get();
+    boost::python::dict members_get();
 	
 	YADE_CLASS_BASE_DOC_ATTRS_CTOR_PY(Clump,Shape,"Rigid aggregate of bodies",
 		((MemberMap,members,,Attr::hidden,"Ids and relative positions+orientations of members of the clump (should not be accessed directly)"))

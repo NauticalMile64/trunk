@@ -56,7 +56,6 @@
 CREATE_LOGGER(TriaxialTest);
 YADE_PLUGIN((TriaxialTest));
 
-using namespace boost;
 using namespace std;
 
 TriaxialTest::~TriaxialTest () {}
@@ -91,10 +90,10 @@ bool TriaxialTest::generate(string& message)
 			upperCorner=lowerCorner+dimensions;
 			num=sphere_pack.makeCloud(lowerCorner,upperCorner,radiusMean,radiusStdDev,numberOfGrains);
 		}
-		message+="Generated a sample with " + lexical_cast<string>(num) + " spheres inside box of dimensions: ("
-			+ lexical_cast<string>(upperCorner[0]-lowerCorner[0]) + ","
-			+ lexical_cast<string>(upperCorner[1]-lowerCorner[1]) + ","
-			+ lexical_cast<string>(upperCorner[2]-lowerCorner[2]) + ").";}
+		message+="Generated a sample with " + boost::lexical_cast<string>(num) + " spheres inside box of dimensions: ("
+			+ boost::lexical_cast<string>(upperCorner[0]-lowerCorner[0]) + ","
+			+ boost::lexical_cast<string>(upperCorner[1]-lowerCorner[1]) + ","
+			+ boost::lexical_cast<string>(upperCorner[2]-lowerCorner[2]) + ").";}
 	else {
 		if(radiusMean>0) LOG_WARN("radiusMean ignored, since importFilename specified.");
 		sphere_pack.fromFile(importFilename);
@@ -188,7 +187,7 @@ bool TriaxialTest::generate(string& message)
 
 void TriaxialTest::createSphere(shared_ptr<Body>& body, Vector3r position, Real radius, bool big, bool dynamic )
 {
-	body = shared_ptr<Body>(new Body); body->groupMask=2;
+	body = shared_ptr<Body>(new Body); body->groupMask=Body::groupMask_t(2);
 	shared_ptr<Aabb> aabb(new Aabb);
 	shared_ptr<Sphere> iSphere(new Sphere);
 	body->state->blockedDOFs=State::DOF_NONE;
@@ -214,7 +213,7 @@ void TriaxialTest::createSphere(shared_ptr<Body>& body, Vector3r position, Real 
 
 void TriaxialTest::createBox(shared_ptr<Body>& body, Vector3r position, Vector3r extents, bool wire)
 {
-	body = shared_ptr<Body>(new Body); body->groupMask=2;
+	body = shared_ptr<Body>(new Body); body->groupMask=Body::groupMask_t(2);
 	body->state->blockedDOFs=State::DOF_ALL;
 	shared_ptr<Aabb> aabb(new Aabb);
 	aabb->color		= Vector3r(1,0,0);

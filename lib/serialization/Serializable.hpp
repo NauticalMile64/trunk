@@ -36,10 +36,7 @@
 
 #include<yade/lib/base/Math.hpp>
 
-using namespace boost;
 using namespace std;
-
-
 // empty functions for ADL
 //namespace{
 	template<typename T>	void preLoad(T&){}; template<typename T> void postLoad(T& obj){ /* cerr<<"Generic no-op postLoad("<<typeid(T).name()<<"&) called for "<<obj.getClassName()<<std::endl; */ }
@@ -185,7 +182,7 @@ void make_setter_postLoad(C& instance, const T& val){ instance.*A=val; /* cerr<<
 	_REGISTER_ATTRIBUTES_DEPREC(thisClass,baseClass,attrs,deprec) \
 	REGISTER_CLASS_AND_BASE(thisClass,baseClass) \
 	/* accessors for deprecated attributes, with warnings */ BOOST_PP_SEQ_FOR_EACH(_ACCESS_DEPREC,thisClass,deprec) \
-	/* python class registration */ virtual void pyRegisterClass(python::object _scope) { checkPyClassRegistersItself(#thisClass); boost::python::scope thisScope(_scope); YADE_SET_DOCSTRING_OPTS; boost::python::class_<thisClass,shared_ptr<thisClass>,boost::python::bases<baseClass>,boost::noncopyable> _classObj(#thisClass,docString); _classObj.def("__init__",python::raw_constructor(Serializable_ctor_kwAttrs<thisClass>)); BOOST_PP_SEQ_FOR_EACH(_PYATTR_DEF,thisClass,attrs); (void) _classObj BOOST_PP_SEQ_FOR_EACH(_PYATTR_DEPREC_DEF,thisClass,deprec); (void) _classObj extras ; }
+	/* python class registration */ virtual void pyRegisterClass(boost::python::object _scope) { checkPyClassRegistersItself(#thisClass); boost::python::scope thisScope(_scope); YADE_SET_DOCSTRING_OPTS; boost::python::class_<thisClass,shared_ptr<thisClass>,boost::python::bases<baseClass>,boost::noncopyable> _classObj(#thisClass,docString); _classObj.def("__init__",boost::python::raw_constructor(Serializable_ctor_kwAttrs<thisClass>)); BOOST_PP_SEQ_FOR_EACH(_PYATTR_DEF,thisClass,attrs); (void) _classObj BOOST_PP_SEQ_FOR_EACH(_PYATTR_DEPREC_DEF,thisClass,deprec); (void) _classObj extras ; }
 	// use later: void must_use_both_YADE_CLASS_BASE_DOC_ATTRS_and_YADE_PLUGIN(); 
 // #define YADE_CLASS_BASE_DOC_ATTRS_PY(thisClass,baseClass,docString,attrs,extras) YADE_CLASS_BASE_DOC_ATTRS_DEPREC_PY(thisClass,baseClass,docString,attrs,,extras)
 
@@ -208,12 +205,18 @@ void make_setter_postLoad(C& instance, const T& val){ instance.*A=val; /* cerr<<
 
 
 #define _STATCLASS_PY_REGISTER_CLASS(thisClass,baseClass,docString,attrs)\
-	virtual void pyRegisterClass(python::object _scope) { checkPyClassRegistersItself(#thisClass); initSetStaticAttributesValue(); boost::python::scope thisScope(_scope); YADE_SET_DOCSTRING_OPTS; \
-		boost::python::class_<thisClass,shared_ptr<thisClass>,boost::python::bases<baseClass>,boost::noncopyable> _classObj(#thisClass,docString "\n\n" BOOST_PP_SEQ_FOR_EACH(_STATATTR_MAKE_DOC,thisClass,attrs) ); _classObj.def("__init__",python::raw_constructor(Serializable_ctor_kwAttrs<thisClass>)); \
+	virtual void pyRegisterClass(boost::python::object _scope) { checkPyClassRegistersItself(#thisClass); initSetStaticAttributesValue(); boost::python::scope thisScope(_scope); YADE_SET_DOCSTRING_OPTS; \
+		boost::python::class_<thisClass,shared_ptr<thisClass>,boost::python::bases<baseClass>,boost::noncopyable> _classObj(#thisClass,docString "\n\n" BOOST_PP_SEQ_FOR_EACH(_STATATTR_MAKE_DOC,thisClass,attrs) ); _classObj.def("__init__",boost::python::raw_constructor(Serializable_ctor_kwAttrs<thisClass>)); \
 		BOOST_PP_SEQ_FOR_EACH(_STATATTR_PY,thisClass,attrs);  \
 	}
-
-
+	
+#define _YADE_CLASS_PYCLASS_BASE_DOC_ATTRS_DEPREC_PY(thisClass,pyClassName,baseClass,docString,attrs,deprec,extras) \
+	_REGISTER_ATTRIBUTES_DEPREC(thisClass,baseClass,attrs,deprec) \
+	REGISTER_CLASS_AND_BASE(pyClassName,baseClass) \
+	/* accessors for deprecated attributes, with warnings */ BOOST_PP_SEQ_FOR_EACH(_ACCESS_DEPREC,thisClass,deprec) \
+	/* python class registration */ virtual void pyRegisterClass(boost::python::object _scope) { checkPyClassRegistersItself(#pyClassName); boost::python::scope thisScope(_scope); YADE_SET_DOCSTRING_OPTS; boost::python::class_<thisClass,shared_ptr<thisClass>,boost::python::bases<baseClass>,boost::noncopyable> _classObj(#pyClassName,docString); _classObj.def("__init__",boost::python::raw_constructor(Serializable_ctor_kwAttrs<thisClass>)); BOOST_PP_SEQ_FOR_EACH(_PYATTR_DEF,thisClass,attrs); (void) _classObj BOOST_PP_SEQ_FOR_EACH(_PYATTR_DEPREC_DEF,thisClass,deprec); (void) _classObj extras ; }
+	
+	
 /********************** USER MACROS START HERE ********************/
 
 // attrs is (type,name,init-value,docstring)
@@ -228,6 +231,12 @@ void make_setter_postLoad(C& instance, const T& val){ instance.*A=val; /* cerr<<
 	public: BOOST_PP_SEQ_FOR_EACH(_ATTR_DECL,~,attrDecls) /* attribute declarations */ \
 	thisClass() BOOST_PP_IF(BOOST_PP_SEQ_SIZE(inits attrDecls),:,) BOOST_PP_SEQ_FOR_EACH_I(_ATTR_MAKE_INITIALIZER,BOOST_PP_DEC(BOOST_PP_SEQ_SIZE(inits attrDecls)), inits BOOST_PP_SEQ_FOR_EACH(_ATTR_MAKE_INIT_TUPLE,~,attrDecls)) { ctor ; } /* ctor, with initialization of defaults */ \
 	_YADE_CLASS_BASE_DOC_ATTRS_DEPREC_PY(thisClass,baseClass,docString,BOOST_PP_SEQ_FOR_EACH(_ATTRS_EMBED_INI_TYP_IN_DOC,~,attrDecls),deprec,extras)
+
+// this one lets you give different class names in c++ and python, necessary for compatibility with c++ templates (else all instaces would have the same class name (ex. in FlowEngine.hpp)
+#define YADE_CLASS_PYCLASS_BASE_DOC_ATTRS_DEPREC_INIT_CTOR_PY(thisClass,pyClassName,baseClass,docString,attrDecls,deprec,inits,ctor,extras) \
+	public: BOOST_PP_SEQ_FOR_EACH(_ATTR_DECL,~,attrDecls) /* attribute declarations */ \
+	thisClass() BOOST_PP_IF(BOOST_PP_SEQ_SIZE(inits attrDecls),:,) BOOST_PP_SEQ_FOR_EACH_I(_ATTR_MAKE_INITIALIZER,BOOST_PP_DEC(BOOST_PP_SEQ_SIZE(inits attrDecls)), inits BOOST_PP_SEQ_FOR_EACH(_ATTR_MAKE_INIT_TUPLE,~,attrDecls)) { ctor ; } /* ctor, with initialization of defaults */ \
+	_YADE_CLASS_PYCLASS_BASE_DOC_ATTRS_DEPREC_PY(thisClass,pyClassName,baseClass,docString,BOOST_PP_SEQ_FOR_EACH(_ATTRS_EMBED_INI_TYP_IN_DOC,~,attrDecls),deprec,extras)
 
 // see https://bugs.launchpad.net/yade/+bug/666876
 // we have to change things at a few other places as well
@@ -281,7 +290,7 @@ class Serializable: public Factorable {
 		virtual void pyHandleCustomCtorArgs(boost::python::tuple& args, boost::python::dict& kw){ return; }
 		
 		//! string representation of this object
-		std::string pyStr() { return "<"+getClassName()+" instance at "+lexical_cast<string>(this)+">"; }
+		std::string pyStr() { return "<"+getClassName()+" instance at "+boost::lexical_cast<string>(this)+">"; }
 
 	REGISTER_CLASS_NAME(Serializable);
 	REGISTER_BASE_CLASS_NAME(Factorable);
@@ -290,11 +299,11 @@ class Serializable: public Factorable {
 
 // helper functions
 template <typename T>
-shared_ptr<T> Serializable_ctor_kwAttrs(python::tuple& t, python::dict& d){
+shared_ptr<T> Serializable_ctor_kwAttrs(boost::python::tuple& t, boost::python::dict& d){
 	shared_ptr<T> instance;
 	instance=shared_ptr<T>(new T);
 	instance->pyHandleCustomCtorArgs(t,d); // can change t and d in-place
-	if(python::len(t)>0) throw runtime_error("Zero (not "+lexical_cast<string>(python::len(t))+") non-keyword constructor arguments required [in Serializable_ctor_kwAttrs; Serializable::pyHandleCustomCtorArgs might had changed it after your call].");
-	if(python::len(d)>0){ instance->pyUpdateAttrs(d); instance->callPostLoad(); }
+	if(boost::python::len(t)>0) throw runtime_error("Zero (not "+boost::lexical_cast<string>(boost::python::len(t))+") non-keyword constructor arguments required [in Serializable_ctor_kwAttrs; Serializable::pyHandleCustomCtorArgs might had changed it after your call].");
+	if(boost::python::len(d)>0){ instance->pyUpdateAttrs(d); instance->callPostLoad(); }
 	return instance;
 }

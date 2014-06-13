@@ -99,6 +99,7 @@ struct ServoPIDController: public TranslationEngine{
     ((Real,maxVelocity,0.0,,"Velocity [m/s]"))
     ((Vector3r,axis,Vector3r::Zero(),,"Unit vector along which apply the velocity [-]"))
     ((Real,target,0.0,,"Target value for the controller [N]"))
+    ((Vector3r,current,Vector3r::Zero(),,"Current value for the controller [N]"))
     ((Real,kP,0.0,,"Proportional gain/coefficient for the PID-controller [-]"))
     ((Real,kI,0.0,,"Integral gain/coefficient for the PID-controller [-]"))
     ((Real,kD,0.0,,"Derivative gain/coefficient for the PID-controller [-]"))
@@ -115,3 +116,15 @@ struct ServoPIDController: public TranslationEngine{
   DECLARE_LOGGER;
 };
 REGISTER_SERIALIZABLE(ServoPIDController);
+
+struct BicyclePedalEngine: public KinematicEngine{
+	virtual void apply(const vector<Body::id_t>& ids);
+	void postLoad(BicyclePedalEngine&){ rotationAxis.normalize(); }
+	YADE_CLASS_BASE_DOC_ATTRS(BicyclePedalEngine,KinematicEngine,"Engine applying the linear motion of ``bicycle pedal`` e.g. moving points around the axis without rotation",
+		((Real,angularVelocity,0,,"Angular velocity. [rad/s]"))
+		((Vector3r,rotationAxis,Vector3r::UnitX(),Attr::triggerPostLoad,"Axis of rotation (direction); will be normalized automatically."))
+		((Real,radius,-1.0,,"Rotation radius. [m]"))
+		((Real,fi,Mathr::PI/2.0,,"Initial phase [radians]"))
+	);
+};
+REGISTER_SERIALIZABLE(BicyclePedalEngine);

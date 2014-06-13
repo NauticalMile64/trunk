@@ -29,8 +29,6 @@
 
 #include<QtGui/qevent.h>
 
-using namespace boost;
-
 #ifdef YADE_GL2PS
 	#include<gl2ps.h>
 #endif
@@ -40,14 +38,14 @@ static int last(-1);
 void GLViewer::useDisplayParameters(size_t n){
 	LOG_DEBUG("Loading display parameters from #"<<n);
 	vector<shared_ptr<DisplayParameters> >& dispParams=Omega::instance().getScene()->dispParams;
-	if(dispParams.size()<=(size_t)n){ throw std::invalid_argument(("Display parameters #"+lexical_cast<string>(n)+" don't exist (number of entries "+lexical_cast<string>(dispParams.size())+")").c_str());; return;}
+	if(dispParams.size()<=(size_t)n){ throw std::invalid_argument(("Display parameters #"+boost::lexical_cast<string>(n)+" don't exist (number of entries "+boost::lexical_cast<string>(dispParams.size())+")").c_str());; return;}
 	const shared_ptr<DisplayParameters>& dp=dispParams[n];
 	string val;
 	if(dp->getValue("OpenGLRenderer",val)){ istringstream oglre(val);
 		yade::ObjectIO::load<typeof(renderer),boost::archive::xml_iarchive>(oglre,"renderer",renderer);
 	}
 	else { LOG_WARN("OpenGLRenderer configuration not found in display parameters, skipped.");}
-	if(dp->getValue("GLViewer",val)){ GLViewer::setState(val); displayMessage("Loaded view configuration #"+lexical_cast<string>(n)); }
+	if(dp->getValue("GLViewer",val)){ GLViewer::setState(val); displayMessage("Loaded view configuration #"+boost::lexical_cast<string>(n)); }
 	else { LOG_WARN("GLViewer configuration not found in display parameters, skipped."); }
 }
 
@@ -60,7 +58,7 @@ void GLViewer::saveDisplayParameters(size_t n){
 	yade::ObjectIO::save<typeof(renderer),boost::archive::xml_oarchive>(oglre,"renderer",renderer);
 	dp->setValue("OpenGLRenderer",oglre.str());
 	dp->setValue("GLViewer",GLViewer::getState());
-	displayMessage("Saved view configuration ot #"+lexical_cast<string>(n));
+	displayMessage("Saved view configuration ot #"+boost::lexical_cast<string>(n));
 }
 
 void GLViewer::draw()
@@ -89,7 +87,6 @@ void GLViewer::draw()
 		int selection = selectedName();
 		if(selection!=-1 && (*(Omega::instance().getScene()->bodies)).exists(selection) && isMoving){
 			static Real lastTimeMoved(0);
-			static Real initv0(0); static Real initv1(0); static Real initv2(0);
 			float v0,v1,v2; manipulatedFrame()->getPosition(v0,v1,v2);
 			if(last == selection) // delay by one redraw, so the body will not jump into 0,0,0 coords
 			{
@@ -98,22 +95,13 @@ void GLViewer::draw()
 				Vector3r&    vel = (*(Omega::instance().getScene()->bodies))[selection]->state->vel;
 				Vector3r&    angVel = (*(Omega::instance().getScene()->bodies))[selection]->state->angVel;
 				angVel=Vector3r::Zero(); 
-				if (!initv0 && !initv1 && !initv2){initv0=v0;initv1=v1;initv2=v2;}
-				if (initv0!=v0 || initv1!=v1 || initv2!=v2) {
-					Real dt=(scene->time-lastTimeMoved); lastTimeMoved=scene->time;
-					if (dt!=0) { 
-						vel[0]=-(v[0]-v0)/dt; vel[1]=-(v[1]-v1)/dt; vel[2]=-(v[2]-v2)/dt;
-						vel[0]=-(initv0-v0)/dt; vel[1]=-(initv1-v1)/dt; vel[2]=-(initv2-v2)/dt;
-						initv0=v0;initv1=v1;initv2=v2;
-					}
-				}
-				else {vel[0]=vel[1]=vel[2]=0; /*v[0]=v0;v[1]=v1;v[2]=v2;*/}
-				v[0]=v0;v[1]=v1;v[2]=v2;
+				Real dt=(scene->time-lastTimeMoved); lastTimeMoved=scene->time;
+				if (dt!=0) { vel[0]=-(v[0]-v0)/dt; vel[1]=-(v[1]-v1)/dt; vel[2]=-(v[2]-v2)/dt;}
+				else vel[0]=vel[1]=vel[2]=0;
 				//FIXME: should update spin like velocity above, when the body is rotated:
 				double q0,q1,q2,q3; manipulatedFrame()->getOrientation(q0,q1,q2,q3);	q.x()=q0;q.y()=q1;q.z()=q2;q.w()=q3;
 			}
 			(*(Omega::instance().getScene()->bodies))[selection]->userForcedDisplacementRedrawHook();	
-			last=selection;
 		}
 		if(manipulatedClipPlane>=0){
 			assert(manipulatedClipPlane<renderer->numClipPlanes);

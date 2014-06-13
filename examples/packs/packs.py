@@ -43,7 +43,7 @@ for part in [
 	pack.regularHexa (pack.inCylinder((+1,1,-2.5),(0,3,-5),1),radius=rad,gap=gap,color=(0,1,1),**kw), # right leg
 	pack.regularHexa (pack.inHyperboloid((+2,0,1),(+6,0,0),1,.5),radius=rad,gap=gap,color=(0,0,1),**kw), # right hand
 	pack.regularOrtho(pack.inCylinder((-2,0,2),(-5,0,4),1),radius=rad,gap=gap,color=(0,0,1),**kw) # left hand
-	]: O.bodies.appendClumped(part,integrateInertia=False)
+	]: O.bodies.appendClumped(part)
 
 
 # Example of geom.facetBox usage 
@@ -112,11 +112,6 @@ vibrationRotationPlate = O.bodies.append(geom.facetBox((-15,5,-5),(2,2,2),wallMa
 
 O.bodies.append(wall((0,0,-10),axis=2))
 
-try:
-	from yade import qt
-	qt.Controller()
-	qt.View()
-except ImportError: pass
 
 O.engines=[
 	#SubdomainBalancer(colorize=True,initRun=True,iterPeriod=100),
@@ -153,6 +148,12 @@ Size:       Mass, %      Cumulative   Cum. mass
 
 # we don't care about physical accuracy here, (over)critical step is fine as long as the simulation doesn't explode
 O.dt=PWaveTimeStep()
+O.run(1,True)
+try:
+	from yade import qt
+	qt.Controller()
+	qt.View()
+except ImportError: pass
 O.saveTmp()
 O.timingEnabled=True
 #O.run(10000,True)
