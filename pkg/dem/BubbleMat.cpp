@@ -35,7 +35,7 @@ Real BubblePhys::computeForce(Real separation, Real surfaceTension, Real rAvg, i
 	  Real c2 = 1./(4*c1*rAvg);
 	  Real ret = fN;
 	  int i = 0;
-	  do {				//[Chan2010], Loop solves modified form of equation (25) using Newton-Raphson method
+	  do {				//[Chan2011], Loop solves modified form of equation (25) using Newton-Raphson method
 		  retOld = ret;
 		  g = log(ret*c2);
 		  f = separation*c1 - ret*g;
@@ -52,7 +52,7 @@ Real BubblePhys::computeForce(Real separation, Real surfaceTension, Real rAvg, i
 	  } while (residual > newtonTol);
 	  return ret;
 	}
-	else {				//Artificial Extension of [Chan2010] equation 25 to approximiate behaviour outside the valid regime (large penetration cases)
+	else {				//Artificial Extension of [Chan2011] equation 25 to approximiate behaviour outside the valid regime (large penetration cases)
 	  return phys->coeffA*exp(phys->coeffB*separation);
 	}
 }
