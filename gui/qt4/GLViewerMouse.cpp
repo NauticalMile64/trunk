@@ -16,10 +16,7 @@
 #include<yade/core/Scene.hpp>
 #include<yade/core/Interaction.hpp>
 #include<yade/core/DisplayParameters.hpp>
-#include<boost/filesystem/operations.hpp>
 #include<boost/algorithm/string.hpp>
-#include<boost/version.hpp>
-#include<boost/python.hpp>
 #include<sstream>
 #include<iomanip>
 #include<boost/algorithm/string/case_conv.hpp>

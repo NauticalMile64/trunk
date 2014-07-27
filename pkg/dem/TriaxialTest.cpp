@@ -8,7 +8,7 @@
 
 
 #include<yade/pkg/dem/ElasticContactLaw.hpp>
-#include<yade/pkg/dem/Ip2_FrictMat_FrictMat_FrictPhys.hpp>
+#include<yade/pkg/dem/FrictPhys.hpp>
 #include<yade/pkg/dem/GlobalStiffnessTimeStepper.hpp>
 #include<yade/pkg/common/ElastMat.hpp>
 #include<yade/pkg/dem/TriaxialStressController.hpp>
@@ -34,14 +34,9 @@
 #include<yade/pkg/dem/Ig2_Sphere_Sphere_ScGeom.hpp>
 #include<yade/pkg/dem/Ig2_Box_Sphere_ScGeom.hpp>
 #include<yade/pkg/dem/Ig2_Facet_Sphere_ScGeom.hpp>
-#include<yade/pkg/dem/Ip2_FrictMat_FrictMat_FrictPhys.hpp>
-#include<yade/pkg/common/Bo1_Sphere_Aabb.hpp>
-#include<yade/pkg/common/Bo1_Box_Aabb.hpp>
-#include<yade/pkg/common/Bo1_Facet_Aabb.hpp>
+#include<yade/pkg/common/Bo1_Aabb.hpp>
 #include<yade/pkg/common/Wall.hpp>
 
-#include <boost/filesystem/convenience.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/numeric/conversion/bounds.hpp>
 #include <boost/limits.hpp>
 // random
@@ -55,8 +50,6 @@
 #include "TriaxialTest.hpp"
 CREATE_LOGGER(TriaxialTest);
 YADE_PLUGIN((TriaxialTest));
-
-using namespace std;
 
 TriaxialTest::~TriaxialTest () {}
 
@@ -110,9 +103,9 @@ bool TriaxialTest::generate(string& message)
 	 	Vector3r center		= Vector3r((lowerCorner[0]+upperCorner[0])/2,
 	 					lowerCorner[1]-thickness/2.0,
 	 					(lowerCorner[2]+upperCorner[2])/2);
-	 	Vector3r halfSize	= Vector3r(wallOversizeFactor*fabs(lowerCorner[0]-upperCorner[0])/2+thickness,
+	 	Vector3r halfSize	= Vector3r(wallOversizeFactor*std::abs(lowerCorner[0]-upperCorner[0])/2+thickness,
 						thickness/2.0,
-	 					wallOversizeFactor*fabs(lowerCorner[2]-upperCorner[2])/2+thickness);
+	 					wallOversizeFactor*std::abs(lowerCorner[2]-upperCorner[2])/2+thickness);
 		createBox(body,center,halfSize,true);
 	 	scene->bodies->insert(body);
 		triaxialcompressionEngine->wall_bottom_id = body->getId();
@@ -120,9 +113,9 @@ bool TriaxialTest::generate(string& message)
 	 	center			= Vector3r((lowerCorner[0]+upperCorner[0])/2,
 	 					upperCorner[1]+thickness/2.0,
 	 					(lowerCorner[2]+upperCorner[2])/2);
-	 	halfSize		= Vector3r(wallOversizeFactor*fabs(lowerCorner[0]-upperCorner[0])/2+thickness,
+	 	halfSize		= Vector3r(wallOversizeFactor*std::abs(lowerCorner[0]-upperCorner[0])/2+thickness,
 	 					thickness/2.0,
-	 					wallOversizeFactor*fabs(lowerCorner[2]-upperCorner[2])/2+thickness);
+	 					wallOversizeFactor*std::abs(lowerCorner[2]-upperCorner[2])/2+thickness);
 		createBox(body,center,halfSize,true);
 	 	scene->bodies->insert(body);
 		triaxialcompressionEngine->wall_top_id = body->getId();
@@ -131,8 +124,8 @@ bool TriaxialTest::generate(string& message)
 	 					(lowerCorner[1]+upperCorner[1])/2,
 	 					(lowerCorner[2]+upperCorner[2])/2);
 		halfSize		= Vector3r(thickness/2.0,
-	 					wallOversizeFactor*fabs(lowerCorner[1]-upperCorner[1])/2+thickness,
-	 					wallOversizeFactor*fabs(lowerCorner[2]-upperCorner[2])/2+thickness);
+	 					wallOversizeFactor*std::abs(lowerCorner[1]-upperCorner[1])/2+thickness,
+	 					wallOversizeFactor*std::abs(lowerCorner[2]-upperCorner[2])/2+thickness);
 		createBox(body,center,halfSize,true);
 	 	scene->bodies->insert(body);
 		triaxialcompressionEngine->wall_left_id = body->getId();
@@ -141,8 +134,8 @@ bool TriaxialTest::generate(string& message)
 	 					(lowerCorner[1]+upperCorner[1])/2,
 						(lowerCorner[2]+upperCorner[2])/2);
 	 	halfSize		= Vector3r(thickness/2.0,
-	 					wallOversizeFactor*fabs(lowerCorner[1]-upperCorner[1])/2+thickness,
-	 					wallOversizeFactor*fabs(lowerCorner[2]-upperCorner[2])/2+thickness);
+	 					wallOversizeFactor*std::abs(lowerCorner[1]-upperCorner[1])/2+thickness,
+	 					wallOversizeFactor*std::abs(lowerCorner[2]-upperCorner[2])/2+thickness);
 
 		createBox(body,center,halfSize,true);
 	 	scene->bodies->insert(body);
@@ -151,8 +144,8 @@ bool TriaxialTest::generate(string& message)
 	 	center			= Vector3r((lowerCorner[0]+upperCorner[0])/2,
 	 					(lowerCorner[1]+upperCorner[1])/2,
 	 					lowerCorner[2]-thickness/2.0);
-	 	halfSize		= Vector3r(wallOversizeFactor*fabs(lowerCorner[0]-upperCorner[0])/2+thickness,
-	 					wallOversizeFactor*fabs(lowerCorner[1]-upperCorner[1])/2+thickness,
+	 	halfSize		= Vector3r(wallOversizeFactor*std::abs(lowerCorner[0]-upperCorner[0])/2+thickness,
+	 					wallOversizeFactor*std::abs(lowerCorner[1]-upperCorner[1])/2+thickness,
 	 					thickness/2.0);
 		createBox(body,center,halfSize,true);
 	 	scene->bodies->insert(body);
@@ -161,8 +154,8 @@ bool TriaxialTest::generate(string& message)
 	 	center			= Vector3r((lowerCorner[0]+upperCorner[0])/2,
 	 					(lowerCorner[1]+upperCorner[1])/2,
 	 					upperCorner[2]+thickness/2.0);
-	 	halfSize		= Vector3r(wallOversizeFactor*fabs(lowerCorner[0]-upperCorner[0])/2+thickness,
-	 					wallOversizeFactor*fabs(lowerCorner[1]-upperCorner[1])/2+thickness,
+	 	halfSize		= Vector3r(wallOversizeFactor*std::abs(lowerCorner[0]-upperCorner[0])/2+thickness,
+	 					wallOversizeFactor*std::abs(lowerCorner[1]-upperCorner[1])/2+thickness,
 	 					thickness/2.0);
 		createBox(body,center,halfSize,true);
 	 	scene->bodies->insert(body);
@@ -187,7 +180,7 @@ bool TriaxialTest::generate(string& message)
 
 void TriaxialTest::createSphere(shared_ptr<Body>& body, Vector3r position, Real radius, bool big, bool dynamic )
 {
-	body = shared_ptr<Body>(new Body); body->groupMask=Body::groupMask_t(2);
+	body = shared_ptr<Body>(new Body); body->groupMask=2;
 	shared_ptr<Aabb> aabb(new Aabb);
 	shared_ptr<Sphere> iSphere(new Sphere);
 	body->state->blockedDOFs=State::DOF_NONE;
@@ -213,7 +206,7 @@ void TriaxialTest::createSphere(shared_ptr<Body>& body, Vector3r position, Real 
 
 void TriaxialTest::createBox(shared_ptr<Body>& body, Vector3r position, Vector3r extents, bool wire)
 {
-	body = shared_ptr<Body>(new Body); body->groupMask=Body::groupMask_t(2);
+	body = shared_ptr<Body>(new Body); body->groupMask=2;
 	body->state->blockedDOFs=State::DOF_ALL;
 	shared_ptr<Aabb> aabb(new Aabb);
 	aabb->color		= Vector3r(1,0,0);

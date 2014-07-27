@@ -11,22 +11,21 @@
 // #define SOLUTE_FLOW
 #ifdef SOLUTE_FLOW
 
-#define TEMPLATE_FLOW_NAME SoluteFlowEngineT
-#include <yade/pkg/pfv/FlowEngine.hpp>
+#include "FlowEngine_SoluteFlowEngineT.hpp"
 
 #include <Eigen/Sparse>
 
-class SoluteCellInfo : public FlowCellInfo
+class SoluteCellInfo : public FlowCellInfo_SoluteFlowEngineT
 {	
 	public:
 	Real solute_concentration;
-	SoluteCellInfo (void) : FlowCellInfo() {solute_concentration=0;}
+	SoluteCellInfo (void) : FlowCellInfo_SoluteFlowEngineT() {solute_concentration=0;}
 	inline Real& solute (void) {return solute_concentration;}
 	inline const Real& solute (void) const {return solute_concentration;}
-	inline void getInfo (const SoluteCellInfo& otherCellInfo) {FlowCellInfo::getInfo(otherCellInfo); solute()=otherCellInfo.solute();}
+	inline void getInfo (const SoluteCellInfo& otherCellInfo) {FlowCellInfo_SoluteFlowEngineT::getInfo(otherCellInfo); solute()=otherCellInfo.solute();}
 };
 
-typedef TemplateFlowEngine<SoluteCellInfo,FlowVertexInfo> SoluteFlowEngineT;
+typedef TemplateFlowEngine_SoluteFlowEngineT<SoluteCellInfo,FlowVertexInfo_SoluteFlowEngineT> SoluteFlowEngineT;
 REGISTER_SERIALIZABLE(SoluteFlowEngineT);
 YADE_PLUGIN((SoluteFlowEngineT));
 
@@ -102,7 +101,7 @@ void SoluteFlowEngine::soluteTransport (double deltatime, double D)
 		
 	// Fill coefficient matrix
 	FOREACH(CellHandle& cell, solver->T[solver->currentTes].cellHandles){
-	cell->info().invVoidVolume() = 1 / ( abs(cell->info().volume()) - abs(solver->volumeSolidPore(cell) ) );
+	cell->info().invVoidVolume() = 1 / ( std::abs(cell->info().volume()) - std::abs(solver->volumeSolidPore(cell) ) );
 	invdistance=0.0;
 	
 
@@ -116,15 +115,15 @@ void SoluteFlowEngine::soluteTransport (double deltatime, double D)
 	  invdistance+=(fluidSurf/sqrt(l.squared_length()));
 	  coeff = deltatime*cell->info().invVoidVolume();
 	      ID = cell->neighbor(ngb)->info().id;
-		 qin=abs(cell->info().kNorm() [ngb])* ( cell->neighbor ( ngb )->info().p()-cell->info().p());
+		 qin=std::abs(cell->info().kNorm() [ngb])* ( cell->neighbor ( ngb )->info().p()-cell->info().p());
 		 Qout=Qout+max(qin,0.0);
-		 coeff1=-1*coeff*(abs(max(qin,0.0))-(D*invdistancelocal));
+		 coeff1=-1*coeff*(std::abs(max(qin,0.0))-(D*invdistancelocal));
 		 if (coeff1 != 0.0){
 		 tripletList2.push_back(ETriplet2(i,ID,coeff1));
 		 }
 	 
 	}
-	coeff2=1.0+(coeff*abs(Qout))+(coeff*D*invdistance);
+	coeff2=1.0+(coeff*std::abs(Qout))+(coeff*D*invdistance);
 	tripletList2.push_back(ETriplet2(i,i,coeff2));
 	Qout=0.0;
 	}   
@@ -178,10 +177,10 @@ double SoluteFlowEngine::getConcentrationPlane (double Yobs,double Yr, int xyz)
 	 FOREACH(CellHandle& cell, solver->T[solver->currentTes].cellHandles)
 	{
 	CGT::Point& p1 = cell->info();
-	if (abs(p1[xyz]) < abs(abs(Yobs) + abs(Yr))){
-	  if(abs(p1[xyz]) > abs(abs(Yobs) - abs(Yr))){
-	    sumConcentration += cell->info().solute()*(1-(abs(p1[xyz])-abs(Yobs))/abs(Yr));
-	    sumFraction += (1-(abs(p1[xyz])-abs(Yobs))/abs(Yr));
+	if (std::abs(p1[xyz]) < std::abs(std::abs(Yobs) + std::abs(Yr))){
+	  if(std::abs(p1[xyz]) > std::abs(std::abs(Yobs) - std::abs(Yr))){
+	    sumConcentration += cell->info().solute()*(1-(std::abs(p1[xyz])-std::abs(Yobs))/std::abs(Yr));
+	    sumFraction += (1-(std::abs(p1[xyz])-std::abs(Yobs))/std::abs(Yr));
 	}
 	}
 	}

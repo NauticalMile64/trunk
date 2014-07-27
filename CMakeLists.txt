@@ -14,9 +14,10 @@
 #  ENABLE_GL2PS: enable GL2PS-option (ON by default)
 #  ENABLE_LINSOLV: enable LINSOLV-option (ON by default)
 #  ENABLE_PFVFLOW: enable PFVFLOW-option, FlowEngine (ON by default)
+#  ENABLE_LBMFLOW: enable LBMFLOW-option, LBM_ENGINE (ON by default)
 #  ENABLE_SPH: enable SPH-option, Smoothed Particle Hydrodynamics (OFF by default, experimental)
-#  ENABLE_LBMFLOW: enable LBMFLOW-option, LBM_ENGINE (OFF by default)
 #  ENABLE_LIQMIGRATION: enable LIQMIGRATION-option, see [Mani2013] for details (OFF by default)
+#  ENABLE_MASK_ARBITRARY: enable MASK_ARBITRARY option (OFF by default)
 #  runtimePREFIX: used for packaging, when install directory is not the same is runtime directory (/usr/local by default)
 #  CHUNKSIZE: set >1, if you want several sources to be compiled at once. Increases compilation speed and RAM-consumption during it (1 by default).
 #  VECTORIZE: enables vectorization and alignment in Eigen3 library, experimental (OFF by default)
@@ -61,7 +62,11 @@ IF ("${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1}" MATCHES ".*clang")
 ENDIF()
 
 #===========================================================
-ADD_DEFINITIONS(" -DYADE_PTR_CAST=boost::static_pointer_cast -DYADE_CAST=static_cast ")
+
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++0x")
+
+#===========================================================
+
 IF (CMAKE_CXX_FLAGS)
   #If flags are set, add only neccessary flags
   IF (DEBUG)
@@ -123,8 +128,9 @@ OPTION(ENABLE_GL2PS "Enable GL2PS" ${DEFAULT})
 OPTION(ENABLE_LINSOLV "Enable direct solver for the flow engines (experimental)" ${DEFAULT})
 OPTION(ENABLE_PFVFLOW "Enable flow engine (experimental)" ${DEFAULT})
 OPTION(ENABLE_SPH "Enable SPH" OFF)
-OPTION(ENABLE_LBMFLOW "Enable LBM engine (very experimental)" OFF)
+OPTION(ENABLE_LBMFLOW "Enable LBM engine (very experimental)" ON)
 OPTION(ENABLE_LIQMIGRATION "Enable liquid control (very experimental), see [Mani2013] for details" OFF)
+OPTION(ENABLE_MASK_ARBITRARY "Enable arbitrary precision of bitmask variables (only Body::groupMask yet implemented) (experimental). Use -DMASK_ARBITRARY_SIZE=int to set number of used bits (256 by default)" OFF)
 
 #===========================================================
 # Use Eigen3 by default
@@ -137,7 +143,6 @@ IF (EIGEN3_FOUND)
     MESSAGE(FATAL_ERROR "Minimal required Eigen3 version is 3.2.1, please update Eigen3!")
   ENDIF ((${EIGEN3_MAJOR_VERSION} LESS 2) OR ((${EIGEN3_MAJOR_VERSION} EQUAL 2) AND (${EIGEN3_MINOR_VERSION} LESS 1)))
 
-  SET(CONFIGURED_FEATS "${CONFIGURED_FEATS} Eigen3")
   IF (NOT VECTORIZE)
     MESSAGE(STATUS "Disable vectorization")
     ADD_DEFINITIONS("-DEIGEN_DONT_VECTORIZE -DEIGEN_DONT_ALIGN -DEIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT")
@@ -159,8 +164,6 @@ ELSE((Boost_MAJOR_VERSION EQUAL 1) OR (Boost_MAJOR_VERSION GREATER 1) AND
     ((Boost_MINOR_VERSION EQUAL 53) OR (Boost_MINOR_VERSION GREATER 53)))
   SET(DISABLED_FEATS "${DISABLED_FEATS} Odeint")
   MESSAGE(STATUS "Boost Odeint can be enabled, only if Boost>=1.53 is used")
-  MESSAGE(STATUS ${Boost_MAJOR_VERSION})
-  MESSAGE(STATUS ${Boost_MINOR_VERSION})
 ENDIF((Boost_MAJOR_VERSION EQUAL 1) OR (Boost_MAJOR_VERSION GREATER 1) AND
      ((Boost_MINOR_VERSION EQUAL 53) OR (Boost_MINOR_VERSION GREATER 53)))
 #===========================================================
@@ -264,9 +267,9 @@ IF(ENABLE_CGAL)
 
     IF(ENABLE_PFVFLOW)
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DFLOW_ENGINE")
-      SET(CONFIGURED_FEATS "${CONFIGURED_FEATS} PFVflow") 
+      SET(CONFIGURED_FEATS "${CONFIGURED_FEATS} PFVFLOW")
     ELSE(ENABLE_PFVFLOW)
-      SET(DISABLED_FEATS "${DISABLED_FEATS} PFVflow")
+      SET(DISABLED_FEATS "${DISABLED_FEATS} PFVFLOW")
     ENDIF(ENABLE_PFVFLOW)
 
   ELSE(CGAL_FOUND AND GMP_FOUND AND (NOT("${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1}" MATCHES ".*clang")))
@@ -274,7 +277,7 @@ IF(ENABLE_CGAL)
     SET(DISABLED_FEATS "${DISABLED_FEATS} CGAL")
     SET(ENABLE_CGAL OFF)
     IF(ENABLE_PFVFLOW)
-      SET(DISABLED_FEATS "${DISABLED_FEATS} PFVflow")
+      SET(DISABLED_FEATS "${DISABLED_FEATS} PFVFLOW")
       MESSAGE(STATUS "CGAL NOT found: PFVFLOW disabled")
     ENDIF(ENABLE_PFVFLOW)
 
@@ -294,14 +297,14 @@ IF(ENABLE_LINSOLV)
     MESSAGE(STATUS "Found Cholmod")
     MESSAGE(STATUS "Found OpenBlas")
     MESSAGE(STATUS "Found Metis")
-    SET(CONFIGURED_FEATS "${CONFIGURED_FEATS} LinSolv")
+    SET(CONFIGURED_FEATS "${CONFIGURED_FEATS} LINSOLV")
   ELSE(CHOLMOD_FOUND AND OPENBLAS_FOUND AND METIS_FOUND)
     MESSAGE(STATUS "Missing dependency for LINSOLV, disabled")
-    SET(DISABLED_FEATS "${DISABLED_FEATS} LinSolv")
+    SET(DISABLED_FEATS "${DISABLED_FEATS} LINSOLV")
     SET(ENABLE_LINSOLV OFF)
   ENDIF(CHOLMOD_FOUND AND OPENBLAS_FOUND AND METIS_FOUND)
 ELSE(ENABLE_LINSOLV)
-  SET(DISABLED_FEATS "${DISABLED_FEATS} LinSolv")
+  SET(DISABLED_FEATS "${DISABLED_FEATS} LINSOLV")
 ENDIF(ENABLE_LINSOLV)
 #===============================================
 IF(ENABLE_SPH)
@@ -356,6 +359,18 @@ IF(ENABLE_LBMFLOW)
 ELSE(ENABLE_LBMFLOW)
   SET(DISABLED_FEATS "${DISABLED_FEATS} LBMFLOW")
 ENDIF(ENABLE_LBMFLOW)
+#===============================================
+IF(ENABLE_MASK_ARBITRARY)
+  ADD_DEFINITIONS("-DYADE_MASK_ARBITRARY")
+  SET(CONFIGURED_FEATS "${CONFIGURED_FEATS} MASK_ARBITRARY")
+  IF(NOT MASK_ARBITRARY_SIZE)
+    SET(MASK_ARBITRARY_SIZE "256")
+  ENDIF(NOT MASK_ARBITRARY_SIZE)
+  ADD_DEFINITIONS(-DYADE_MASK_ARBITRARY_SIZE=${MASK_ARBITRARY_SIZE})
+  MESSAGE("MASK_ARBITRARY_SIZE = ${MASK_ARBITRARY_SIZE}")
+ELSE(ENABLE_MASK_ARBITRARY)
+  SET(DISABLED_FEATS "${DISABLED_FEATS} MASK_ARBITRARY")
+ENDIF(ENABLE_MASK_ARBITRARY)
 
 #===========================================================
 
@@ -418,7 +433,8 @@ FILE(GLOB SRC_CORE "core/*.cpp")
 FILE(GLOB_RECURSE SRC_PKG  "pkg/*.cpp")
 FILE(GLOB SRC_LIB  "lib/*.cpp")
 
-SET(SRC_LIB "${SRC_LIB};lib/base/Math.cpp;lib/factory/ClassFactory.cpp;lib/factory/DynLibManager.cpp;lib/multimethods/Indexable.cpp;lib/serialization/Serializable.cpp;lib/pyutil/gil.cpp;core/main/pyboot.cpp;${GUI_SRC_LIB};${CGAL_SRC_LIB}")
+SET(SRC_LIB "${SRC_LIB};lib/base/Math.cpp;lib/factory/ClassFactory.cpp;lib/factory/DynLibManager.cpp")
+SET(SRC_LIB "${SRC_LIB};lib/serialization/Serializable.cpp;lib/pyutil/gil.cpp;core/main/pyboot.cpp;${GUI_SRC_LIB};${CGAL_SRC_LIB}")
 
 #===========================================================
 
@@ -484,6 +500,17 @@ CONFIGURE_FILE(core/main/main.py.in "${CMAKE_BINARY_DIR}/bins/yade${SUFFIX}")
 CONFIGURE_FILE(py/config.py.in "${CMAKE_BINARY_DIR}/config.py")
 CONFIGURE_FILE(py/__init__.py.in "${CMAKE_BINARY_DIR}/__init__.py")
 
+#===========================================================
+# Create header files for PFV from FlowEngine.hpp.in-template.
+# All @TEMPLATE_FLOW_NAME@ are replacing by a given names
+
+SET (TEMPLATE_FLOW_NAMES DFNFlowEngineT DummyFlowEngineT FlowEngineT FlowEngine_PeriodicInfo SoluteFlowEngineT)
+FOREACH(TF ${TEMPLATE_FLOW_NAMES})
+  SET (TEMPLATE_FLOW_NAME ${TF})
+  CONFIGURE_FILE(pkg/pfv/FlowEngine.hpp.in "${CMAKE_BINARY_DIR}/pkg/pfv/FlowEngine_${TF}.hpp" @ONLY)
+  CONFIGURE_FILE(pkg/pfv/FlowEngine.ipp.in "${CMAKE_BINARY_DIR}/pkg/pfv/FlowEngine_${TF}.ipp" @ONLY)
+ENDFOREACH(TF)
+INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/pkg/pfv/")
 #===========================================================
 
 INSTALL(PROGRAMS "${CMAKE_BINARY_DIR}/bins/yade${SUFFIX}-batch" DESTINATION ${YADE_EXEC_PATH}/)

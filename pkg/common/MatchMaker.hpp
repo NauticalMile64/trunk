@@ -1,7 +1,6 @@
 // 2010 © Václav Šmilauer <eudoxos@arcig.cz>
 #pragma once
 #include<yade/lib/serialization/Serializable.hpp>
-#include<string>
 
 namespace py = boost::python;
 
@@ -25,7 +24,7 @@ class MatchMaker: public Serializable {
 		bool fbNeedsValues;
 	#endif 
 	public:
-		virtual ~MatchMaker();
+		virtual ~MatchMaker() {};
 		MatchMaker(std::string _algo): algo(_algo){ postLoad(*this); }
 		MatchMaker(Real _val): algo("val"), val(_val){ postLoad(*this); }
 		Real computeFallback(Real val1, Real val2) const ;

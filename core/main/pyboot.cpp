@@ -2,14 +2,6 @@
 #include<yade/lib/base/Logging.hpp>
 
 #include<signal.h>
-#include<cstdlib>
-#include<cstdio>
-#include<iostream>
-#include<string>
-#include<stdexcept>
-
-#include<boost/python.hpp>
-#include<boost/filesystem/convenience.hpp>
 
 #ifdef YADE_DEBUG
 	void crashHandler(int sig){

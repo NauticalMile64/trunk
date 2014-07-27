@@ -10,6 +10,7 @@
 #include<yade/pkg/common/SPHEngine.hpp>
 #endif
 
+using std::isfinite;
 YADE_PLUGIN((ViscElMat)(ViscElPhys)(Ip2_ViscElMat_ViscElMat_ViscElPhys)(Law2_ScGeom_ViscElPhys_Basic));
 
 /* ViscElMat */
@@ -28,7 +29,7 @@ void Ip2_ViscElMat_ViscElMat_ViscElPhys::go(const shared_ptr<Material>& b1, cons
 }
 
 /* Law2_ScGeom_ViscElPhys_Basic */
-void Law2_ScGeom_ViscElPhys_Basic::go(shared_ptr<IGeom>& _geom, shared_ptr<IPhys>& _phys, Interaction* I) {
+bool Law2_ScGeom_ViscElPhys_Basic::go(shared_ptr<IGeom>& _geom, shared_ptr<IPhys>& _phys, Interaction* I) {
 	Vector3r force = Vector3r::Zero();
 	Vector3r torque1 = Vector3r::Zero();
 	Vector3r torque2 = Vector3r::Zero();
@@ -40,11 +41,8 @@ void Law2_ScGeom_ViscElPhys_Basic::go(shared_ptr<IGeom>& _geom, shared_ptr<IPhys
 		addForce (id2, force,scene);
 		addTorque(id1, torque1,scene);
 		addTorque(id2, torque2,scene);
-		return;
-	} else {
-		scene->interactions->requestErase(I);
-		return;
-	}
+		return true;
+	} else return false;
 }
 
 bool computeForceTorqueViscEl(shared_ptr<IGeom>& _geom, shared_ptr<IPhys>& _phys, Interaction* I, Vector3r & force, Vector3r & torque1, Vector3r & torque2) {
@@ -195,10 +193,10 @@ void Ip2_ViscElMat_ViscElMat_ViscElPhys::Calculate_ViscElMat_ViscElMat_ViscElPhy
 		ks1 = ks2 = 2.0/7.0 /Tc/Tc * ( Mathr::PI*Mathr::PI + pow(log(Et),2) )*massR;
 		cs1 = cs2 = -2.0/7.0 /Tc * log(Et)*massR;
 	
-		if (abs(cn1) <= Mathr::ZERO_TOLERANCE ) cn1=0;
-		if (abs(cn2) <= Mathr::ZERO_TOLERANCE ) cn2=0;
-		if (abs(cs1) <= Mathr::ZERO_TOLERANCE ) cs1=0;
-		if (abs(cs2) <= Mathr::ZERO_TOLERANCE ) cs2=0;
+		if (std::abs(cn1) <= Mathr::ZERO_TOLERANCE ) cn1=0;
+		if (std::abs(cn2) <= Mathr::ZERO_TOLERANCE ) cn2=0;
+		if (std::abs(cs1) <= Mathr::ZERO_TOLERANCE ) cs1=0;
+		if (std::abs(cs2) <= Mathr::ZERO_TOLERANCE ) cs2=0;
 	} else if ((isfinite(mat1->kn)) and (isfinite(mat1->ks)) and (isfinite(mat1->cn)) and (isfinite(mat1->cs))) {
 		//Set parameters explicitly
 		kn1 = mat1->kn;

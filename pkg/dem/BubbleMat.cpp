@@ -10,7 +10,7 @@ CREATE_LOGGER(Ip2_BubbleMat_BubbleMat_BubblePhys);
 void Ip2_BubbleMat_BubbleMat_BubblePhys::go(const shared_ptr<Material>& m1, const shared_ptr<Material>& m2, const shared_ptr<Interaction>& interaction){
 	// phys already exists
 	if (interaction->phys) return;
-	
+
 	shared_ptr<BubblePhys> phys(new BubblePhys());
 	interaction->phys = phys;
 }
@@ -60,7 +60,7 @@ Real BubblePhys::computeForce(Real separation, Real surfaceTension, Real rAvg, i
 /********************** Law2_ScGeom_BubblePhys_Bubble ****************************/
 CREATE_LOGGER(Law2_ScGeom_BubblePhys_Bubble);
 
-void Law2_ScGeom_BubblePhys_Bubble::go(shared_ptr<IGeom>& _geom, shared_ptr<IPhys>& _phys, Interaction* I){
+bool Law2_ScGeom_BubblePhys_Bubble::go(shared_ptr<IGeom>& _geom, shared_ptr<IPhys>& _phys, Interaction* I){
 	ScGeom* geom=static_cast<ScGeom*>(_geom.get());
 	BubblePhys* phys=static_cast<BubblePhys*>(_phys.get());
 	
@@ -92,4 +92,5 @@ void Law2_ScGeom_BubblePhys_Bubble::go(shared_ptr<IGeom>& _geom, shared_ptr<IPhy
 		scene->forces.addTorque(id1,(geom->radius1-0.5*geom->penetrationDepth)* geom->normal.cross(normalForce));
 		scene->forces.addTorque(id2,(geom->radius2-0.5*geom->penetrationDepth)* geom->normal.cross(normalForce));
 	}
+	return true;
 }

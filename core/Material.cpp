@@ -1,12 +1,6 @@
 #include<stdexcept>
 #include<yade/core/Material.hpp>
 #include<yade/core/Scene.hpp>
-#include<boost/foreach.hpp>
-#ifndef FOREACH
-	#define FOREACH BOOST_FOREACH
-#endif
-
-Material::~Material(){}
 
 const shared_ptr<Material> Material::byId(int id, Scene* w_){
 	Scene* w=w_?w_:Omega::instance().getScene().get();

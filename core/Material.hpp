@@ -1,6 +1,5 @@
 // 2009 © Václav Šmilauer <eudoxos@arcig.cz>
 #pragma once
-#include<string>
 #include<yade/lib/serialization/Serializable.hpp>
 #include<yade/lib/multimethods/Indexable.hpp>
 #include<yade/core/State.hpp>
@@ -15,7 +14,7 @@ The other data are now in the State class.
 */
 class Material: public Serializable, public Indexable{
 	public:
-		virtual ~Material();
+		virtual ~Material() {};
 
 		//! Function to return empty default-initialized instance of State that 
 		// is supposed to go along with this Material. Don't override unless you need

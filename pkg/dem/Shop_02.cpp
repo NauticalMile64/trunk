@@ -1,12 +1,6 @@
 // 2007 © Václav Šmilauer <eudoxos@arcig.cz>
 #include"Shop.hpp"
 
-#include<limits>
-
-#include<boost/filesystem/convenience.hpp>
-#include<boost/tokenizer.hpp>
-#include<boost/tuple/tuple.hpp>
-
 #include<yade/core/Scene.hpp>
 #include<yade/core/Body.hpp>
 #include<yade/core/Interaction.hpp>
@@ -21,12 +15,11 @@
 #include<yade/pkg/dem/ViscoelasticPM.hpp>
 #include<yade/pkg/dem/CapillaryPhys.hpp>
 
-#include<yade/pkg/common/Bo1_Sphere_Aabb.hpp>
-#include<yade/pkg/common/Bo1_Box_Aabb.hpp>
+#include<yade/pkg/common/Bo1_Aabb.hpp>
 #include<yade/pkg/dem/NewtonIntegrator.hpp>
 #include<yade/pkg/dem/Ig2_Sphere_Sphere_ScGeom.hpp>
 #include<yade/pkg/dem/Ig2_Box_Sphere_ScGeom.hpp>
-#include<yade/pkg/dem/Ip2_FrictMat_FrictMat_FrictPhys.hpp>
+#include<yade/pkg/dem/FrictPhys.hpp>
 
 #include<yade/pkg/common/ForceResetter.hpp>
 
@@ -48,11 +41,6 @@
 	#include<yade/pkg/common/Gl1_NormPhys.hpp>
 #endif
 
-#include<boost/foreach.hpp>
-#ifndef FOREACH
-	#define FOREACH BOOST_FOREACH
-#endif
-
 CREATE_LOGGER(Shop);
 
 /*! Flip periodic cell by given number of cells.
@@ -67,8 +55,8 @@ Real Shop::RayleighWaveTimeStep(const shared_ptr<Scene> _rb){
 	FOREACH(const shared_ptr<Body>& b, *rb->bodies){
 		if(!b || !b->material || !b->shape) continue;
 		
-		shared_ptr<ElastMat> ebp=boost::dynamic_pointer_cast<ElastMat>(b->material);
-		shared_ptr<Sphere> s=boost::dynamic_pointer_cast<Sphere>(b->shape);
+		shared_ptr<ElastMat> ebp=YADE_PTR_DYN_CAST<ElastMat>(b->material);
+		shared_ptr<Sphere> s=YADE_PTR_DYN_CAST<Sphere>(b->shape);
 		if(!ebp || !s) continue;
 		
 		Real density=b->state->mass/((4/3.)*Mathr::PI*pow(s->radius,3));
@@ -346,7 +334,7 @@ void Shop::fabricTensor(Real& Fmean, Matrix3r& fabric, Matrix3r& fabricStrong, M
 	// *** Compute total fabric tensor from the two tensors above ***/
 	Matrix3r fabricTot(Matrix3r::Zero()); 
 	int q(0);
-	if(!count==0){ // compute only if there are some interactions
+	if(!count){ // compute only if there are some interactions
 		q=nStrong*1./count; 
 		fabricTot=(1-q)*fabricWeak+q*fabricStrong;
 	}

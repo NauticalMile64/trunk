@@ -13,10 +13,9 @@
 /// It is a bit more complicated as for FlowEngine, though, because we need template inheriting from template, which breaks YADE_CLASS_XXX logic_error
 /// See below the commented exemple, for a possible solution
 
-#define TEMPLATE_FLOW_NAME FlowEngine_PeriodicInfo
-#include <yade/pkg/pfv/FlowEngine.hpp>
+#include "FlowEngine_FlowEngine_PeriodicInfo.hpp"
 
-class PeriodicCellInfo : public FlowCellInfo
+class PeriodicCellInfo : public FlowCellInfo_FlowEngine_PeriodicInfo
 {	
 	public:
 	static CVector gradP;
@@ -43,7 +42,7 @@ class PeriodicCellInfo : public FlowCellInfo
 };
 
 
-class PeriodicVertexInfo : public FlowVertexInfo {
+class PeriodicVertexInfo : public FlowVertexInfo_FlowEngine_PeriodicInfo {
 	public:
 	PeriodicVertexInfo& operator= (const CVector &u) { CVector::operator= (u); return *this; }
 	PeriodicVertexInfo& operator= (const float &scalar) { s=scalar; return *this; }
@@ -64,7 +63,7 @@ typedef CGT::PeriodicTesselation<CGT::_Tesselation<PeriFlowTriangulationTypes> >
 #define _PeriFlowSolver CGT::PeriodicFlow<PeriFlowTesselation>
 #endif
 
-typedef TemplateFlowEngine<	PeriodicCellInfo,
+typedef TemplateFlowEngine_FlowEngine_PeriodicInfo<	PeriodicCellInfo,
 				PeriodicVertexInfo,
 				CGT::PeriodicTesselation<CGT::_Tesselation<CGT::TriangulationTypes<PeriodicVertexInfo,PeriodicCellInfo> > >,
 				_PeriFlowSolver>
@@ -318,7 +317,7 @@ Real PeriodicFlowEngine::volumeCellSingleFictious ( CellHandle cell )
                 }
         }
         Real Volume = 0.5* ( ( V[0]-V[1] ).cross ( V[0]-V[2] ) ) [solver->boundary ( b ).coordinate] * ( 0.33333333333* ( V[0][solver->boundary ( b ).coordinate]+ V[1][solver->boundary ( b ).coordinate]+ V[2][solver->boundary ( b ).coordinate] ) - Wall_coordinate );
-        return abs ( Volume );
+        return std::abs ( Volume );
 }
 
 
@@ -435,7 +434,7 @@ void PeriodicFlowEngine::updateVolumes (FlowSolver& flow)
                 totVol+=newVol;
                 dVol=cell->info().volumeSign * ( newVol - cell->info().volume() );
                 totDVol+=dVol;
-                epsVolMax = max ( epsVolMax, abs ( dVol/newVol ) );
+                epsVolMax = max ( epsVolMax, std::abs ( dVol/newVol ) );
                 cell->info().dv() = dVol * invDeltaT;
                 cell->info().volume() = newVol;
         }
@@ -457,7 +456,7 @@ void PeriodicFlowEngine::initializeVolumes (FlowSolver& flow)
 			default:  cell->info().volume() = 0; break;
 		}
 		//FIXME: the void volume is negative sometimes, hence crashing...
-		if (flow.fluidBulkModulus>0) { cell->info().invVoidVolume() = 1. / (max(0.1*cell->info().volume(),abs(cell->info().volume()) - flow.volumeSolidPore(cell)) ); }
+		if (flow.fluidBulkModulus>0) { cell->info().invVoidVolume() = 1. / (max(0.1*cell->info().volume(),std::abs(cell->info().volume()) - flow.volumeSolidPore(cell)) ); }
 	}
         if ( debug ) cout << "Volumes initialised." << endl;
 }

@@ -4,8 +4,6 @@
 #include<yade/pkg/common/Wall.hpp>
 #include<yade/pkg/common/Facet.hpp>
 
-#include<sstream>
-
 #ifdef YADE_OPENGL
 	#include<yade/lib/opengl/OpenGLWrapper.hpp>
 	#include<yade/lib/opengl/GLUtils.hpp>
@@ -66,7 +64,7 @@ bool Ig2_Sphere_Sphere_L3Geom::genericGo(bool is6Dof, const shared_ptr<Shape>& s
 
 	const Real& r1=s1->cast<Sphere>().radius; const Real& r2=s2->cast<Sphere>().radius;
 	Vector3r relPos=state2.pos+shift2-state1.pos;
-	Real unDistSq=relPos.squaredNorm()-pow(abs(distFactor)*(r1+r2),2);
+	Real unDistSq=relPos.squaredNorm()-pow(std::abs(distFactor)*(r1+r2),2);
 	if (unDistSq>0 && !I->isReal() && !force) return false;
 
 	// contact exists, go ahead
@@ -97,7 +95,7 @@ void Ig2_Sphere_Sphere_L3Geom::handleSpheresLikeContact(const shared_ptr<Interac
 		// g.trsf.setFromTwoVectors(Vector3r::UnitX(),g.normal); // quaternion just from the X-axis; does not seem to work for some reason?!
 		const Vector3r& locX(g.normal);
 		// initial local y-axis orientation, in the xz or xy plane, depending on which component is larger to avoid singularities
-		Vector3r locY=normal.cross(abs(normal[1])<abs(normal[2])?Vector3r::UnitY():Vector3r::UnitZ()); locY-=locX*locY.dot(locX); locY.normalize();
+		Vector3r locY=normal.cross(std::abs(normal[1])<std::abs(normal[2])?Vector3r::UnitY():Vector3r::UnitZ()); locY-=locX*locY.dot(locX); locY.normalize();
 		Vector3r locZ=normal.cross(locY);
 		#ifdef L3_TRSF_QUATERNION
 			Matrix3r trsf; trsf.row(0)=locX; trsf.row(1)=locY; trsf.row(2)=locZ;
@@ -131,7 +129,7 @@ void Ig2_Sphere_Sphere_L3Geom::handleSpheresLikeContact(const shared_ptr<Interac
 	Vector3r normTwistVec=avgNormal*scene->dt*.5*avgNormal.dot(state1.angVel+state2.angVel);
 	// compute relative velocity
 	// noRatch: take radius or current distance as the branch vector; see discussion in ScGeom::precompute (avoidGranularRatcheting)
-	Vector3r c1x=((noRatch && !r1>0) ? ( r1*normal).eval() : (contPt-state1.pos).eval()); // used only for sphere-sphere
+	Vector3r c1x=((noRatch && !(r1>0)) ? ( r1*normal).eval() : (contPt-state1.pos).eval()); // used only for sphere-sphere
 	Vector3r c2x=(noRatch ? (-r2*normal).eval() : (contPt-state2.pos+shift2).eval());
 	//Vector3r state2velCorrected=state2.vel+(scene->isPeriodic?scene->cell->intrShiftVel(I->cellDist):Vector3r::Zero()); // velocity of the second particle, corrected with meanfield velocity if necessary
 	//cerr<<"correction "<<(scene->isPeriodic?scene->cell->intrShiftVel(I->cellDist):Vector3r::Zero())<<endl;
@@ -177,7 +175,7 @@ void Ig2_Sphere_Sphere_L3Geom::handleSpheresLikeContact(const shared_ptr<Interac
 				currTrsf=Matrix3r(Quaternionr(currTrsf).normalized());
 			#endif
 			#ifdef YADE_DEBUG
-				if(abs(currTrsf.determinant()-1)>.05){
+				if(std::abs(currTrsf.determinant()-1)>.05){
 					LOG_ERROR("##"<<I->getId1()<<"+"<<I->getId2()<<", |trsf|="<<currTrsf.determinant());
 					g.trsf=currTrsf;
 					throw runtime_error("Transformation matrix far from orthonormal.");
@@ -234,7 +232,7 @@ bool Ig2_Wall_Sphere_L3Geom::go(const shared_ptr<Shape>& s1, const shared_ptr<Sh
 	if(scene->isPeriodic) throw std::logic_error("Ig2_Wall_Sphere_L3Geom does not handle periodic boundary conditions.");
 	const Real& radius=s2->cast<Sphere>().radius; const int& ax(s1->cast<Wall>().axis); const int& sense(s1->cast<Wall>().sense);
 	Real dist=state2.pos[ax]+shift2[ax]-state1.pos[ax]; // signed "distance" between centers
-	if(!I->isReal() && abs(dist)>radius && !force) { return false; }// wall and sphere too far from each other
+	if(!I->isReal() && std::abs(dist)>radius && !force) { return false; }// wall and sphere too far from each other
 	// contact point is sphere center projected onto the wall
 	Vector3r contPt=state2.pos+shift2; contPt[ax]=state1.pos[ax];
 	Vector3r normal=Vector3r::Zero();
@@ -259,7 +257,7 @@ bool Ig2_Facet_Sphere_L3Geom::go(const shared_ptr<Shape>& s1, const shared_ptr<S
 		Vector3r cogLine=state1.ori.conjugate()*(state2.pos+shift2-state1.pos); // connect centers of gravity
 		Vector3r normal=facet.normal; // trial contact normal
 		Real planeDist=normal.dot(cogLine);
-		if(abs(planeDist)>radius && !I->isReal() && !force) return false; // sphere too far
+		if(std::abs(planeDist)>radius && !I->isReal() && !force) return false; // sphere too far
 		if(planeDist<0){normal*=-1; planeDist*=-1; }
 		Vector3r planarPt=cogLine-planeDist*normal; // project sphere center to the facet plane
 		Vector3r contactPt; // facet's point closes to the sphere
@@ -286,14 +284,14 @@ bool Ig2_Facet_Sphere_L3Geom::go(const shared_ptr<Shape>& s1, const shared_ptr<S
 	return true;
 }
 
-void Law2_L3Geom_FrictPhys_ElPerfPl::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& ip, Interaction* I){
+bool Law2_L3Geom_FrictPhys_ElPerfPl::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& ip, Interaction* I){
 	L3Geom* geom=static_cast<L3Geom*>(ig.get()); FrictPhys* phys=static_cast<FrictPhys*>(ip.get());
 
 	// compute force
 	Vector3r& localF(geom->F);
 	localF=geom->relU().cwiseProduct(Vector3r(phys->kn,phys->ks,phys->ks));
 	// break if necessary
-	if(localF[0]>0 && !noBreak){ scene->interactions->requestErase(I); return; }
+	if(localF[0]>0 && !noBreak) return false;
 
 	if(!noSlip){
 		// plastic slip, if necessary; non-zero elastic limit only for compression
@@ -310,10 +308,11 @@ void Law2_L3Geom_FrictPhys_ElPerfPl::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>
 	if(scene->trackEnergy)	{ scene->energy->add(0.5*(pow(geom->relU()[0],2)*phys->kn+(pow(geom->relU()[1],2)+pow(geom->relU()[2],2))*phys->ks),"elastPotential",elastPotentialIx,/*reset at every timestep*/true); }
 	// apply force: this converts the force to global space, updates NormShearPhys::{normal,shear}Force, applies to particles
 	geom->applyLocalForce(localF,I,scene,phys);
+	return true;
 }
 
 
-void Law2_L6Geom_FrictPhys_Linear::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& ip, Interaction* I){
+bool Law2_L6Geom_FrictPhys_Linear::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& ip, Interaction* I){
 	L6Geom& geom=ig->cast<L6Geom>(); FrictPhys& phys=ip->cast<FrictPhys>();
 
 	// simple linear relationships
@@ -321,6 +320,7 @@ void Law2_L6Geom_FrictPhys_Linear::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& 
 	Vector3r localT=charLen*(geom.relPhi().cwiseProduct(Vector3r(phys.kn,phys.ks,phys.ks)));
 
 	geom.applyLocalForceTorque(localF,localT,I,scene,static_cast<NormShearPhys*>(ip.get()));
+	return true;
 }
 
 #ifdef YADE_OPENGL

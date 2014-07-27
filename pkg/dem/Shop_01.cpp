@@ -1,9 +1,6 @@
 // 2007 © Václav Šmilauer <eudoxos@arcig.cz>
 #include"Shop.hpp"
-
-#include<boost/filesystem/convenience.hpp>
 #include<boost/tokenizer.hpp>
-#include<boost/tuple/tuple.hpp>
 
 #include"yade/core/Scene.hpp"
 #include"yade/core/Body.hpp"
@@ -19,12 +16,11 @@
 #include"yade/pkg/dem/ViscoelasticPM.hpp"
 #include"yade/pkg/dem/CapillaryPhys.hpp"
 
-#include"yade/pkg/common/Bo1_Sphere_Aabb.hpp"
-#include"yade/pkg/common/Bo1_Box_Aabb.hpp"
+#include"yade/pkg/common/Bo1_Aabb.hpp"
 #include"yade/pkg/dem/NewtonIntegrator.hpp"
 #include"yade/pkg/dem/Ig2_Sphere_Sphere_ScGeom.hpp"
 #include"yade/pkg/dem/Ig2_Box_Sphere_ScGeom.hpp"
-#include"yade/pkg/dem/Ip2_FrictMat_FrictMat_FrictPhys.hpp"
+#include"yade/pkg/dem/FrictPhys.hpp"
 
 #include"yade/pkg/common/ForceResetter.hpp"
 
@@ -44,11 +40,6 @@
 
 #ifdef YADE_OPENGL
 	#include"yade/pkg/common/Gl1_NormPhys.hpp"
-#endif
-
-#include<boost/foreach.hpp>
-#ifndef FOREACH
-	#define FOREACH BOOST_FOREACH
 #endif
 
 CREATE_LOGGER(Shop);
@@ -146,7 +137,7 @@ Vector3r Shop::totalForceInVolume(Real& avgIsoStiffness, Scene* _rb){
 	FOREACH(const shared_ptr<Interaction>&I, *rb->interactions){
 		if(!I->isReal()) continue;
 		NormShearPhys* nsi=YADE_CAST<NormShearPhys*>(I->phys.get());
-		force+=Vector3r(abs(nsi->normalForce[0]+nsi->shearForce[0]),abs(nsi->normalForce[1]+nsi->shearForce[1]),abs(nsi->normalForce[2]+nsi->shearForce[2]));
+		force+=Vector3r(std::abs(nsi->normalForce[0]+nsi->shearForce[0]),std::abs(nsi->normalForce[1]+nsi->shearForce[1]),std::abs(nsi->normalForce[2]+nsi->shearForce[2]));
 		stiff+=(1/3.)*nsi->kn+(2/3.)*nsi->ks; // count kn in one direction and ks in the other two
 		n++;
 	}
@@ -159,7 +150,7 @@ Real Shop::unbalancedForce(bool useMaxForce, Scene* _rb){
 	rb->forces.sync();
 	shared_ptr<NewtonIntegrator> newton;
 	Vector3r gravity = Vector3r::Zero();
-	FOREACH(shared_ptr<Engine>& e, rb->engines){ newton=boost::dynamic_pointer_cast<NewtonIntegrator>(e); if(newton) {gravity=newton->gravity; break;} }
+	FOREACH(shared_ptr<Engine>& e, rb->engines){ newton=YADE_PTR_DYN_CAST<NewtonIntegrator>(e); if(newton) {gravity=newton->gravity; break;} }
 	// get maximum force on a body and sum of all forces (for averaging)
 	Real sumF=0,maxF=0,currF; int nb=0;
 	FOREACH(const shared_ptr<Body>& b, *rb->bodies){
@@ -293,7 +284,7 @@ void Shop::saveSpheresToFile(string fname){
 
 	FOREACH(shared_ptr<Body> b, *scene->bodies){
 		if (!b->isDynamic()) continue;
-		shared_ptr<Sphere>	intSph=boost::dynamic_pointer_cast<Sphere>(b->shape);
+		shared_ptr<Sphere>	intSph=YADE_PTR_DYN_CAST<Sphere>(b->shape);
 		if(!intSph) continue;
 		const Vector3r& pos=b->state->pos;
 		f<<pos[0]<<" "<<pos[1]<<" "<<pos[2]<<" "<<intSph->radius<<endl; // <<" "<<1<<" "<<1<<endl;
@@ -441,8 +432,8 @@ Real Shop::PWaveTimeStep(const shared_ptr<Scene> _rb){
 	Real dt=std::numeric_limits<Real>::infinity();
 	FOREACH(const shared_ptr<Body>& b, *rb->bodies){
 		if(!b || !b->material || !b->shape) continue;
-		shared_ptr<ElastMat> ebp=boost::dynamic_pointer_cast<ElastMat>(b->material);
-		shared_ptr<Sphere> s=boost::dynamic_pointer_cast<Sphere>(b->shape);
+		shared_ptr<ElastMat> ebp=YADE_PTR_DYN_CAST<ElastMat>(b->material);
+		shared_ptr<Sphere> s=YADE_PTR_DYN_CAST<Sphere>(b->shape);
 		if(!ebp || !s) continue;
 		Real density=b->state->mass/((4/3.)*Mathr::PI*pow(s->radius,3));
 		dt=min(dt,s->radius/sqrt(ebp->young/density));

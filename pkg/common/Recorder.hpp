@@ -1,15 +1,22 @@
 // 2009 © Václav Šmilauer <eudoxos@arcig.cz>
 #pragma once 
 #include<yade/pkg/common/PeriodicEngines.hpp>
-#include<fstream>
-#include<string>
 class Recorder: public PeriodicEngine{
-	void openAndCheck();
+	void openAndCheck() {
+		assert(!out.is_open());
+		
+		std::string fileTemp = file;
+		if (addIterNum) fileTemp+="-" + boost::lexical_cast<string>(scene->iter);
+		
+		if(fileTemp.empty()) throw ios_base::failure(__FILE__ ": Empty filename.");
+		out.open(fileTemp.c_str(), truncate ? fstream::trunc : fstream::app);
+		if(!out.good()) throw ios_base::failure(__FILE__ ": I/O error opening file `"+fileTemp+"'.");
+	}
 	protected:
 		//! stream object that derived engines should write to
 		std::ofstream out;
 	public:
-		virtual ~Recorder(); // vtable
+		virtual ~Recorder() {};
 		virtual bool isActivated(){
 			if(PeriodicEngine::isActivated()){
 				if(!out.is_open()) openAndCheck();

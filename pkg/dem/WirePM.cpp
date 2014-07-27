@@ -80,7 +80,7 @@ void WireMat::postLoad(WireMat&){
 /********************** Law2_ScGeom_WirePhys_WirePM ****************************/
 CREATE_LOGGER(Law2_ScGeom_WirePhys_WirePM);
 
-void Law2_ScGeom_WirePhys_WirePM::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& ip, Interaction* contact){
+bool Law2_ScGeom_WirePhys_WirePM::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& ip, Interaction* contact){
 
 	LOG_TRACE( "Law2_ScGeom_WirePhys_WirePM::go - contact law" );
 
@@ -102,8 +102,7 @@ void Law2_ScGeom_WirePhys_WirePM::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& i
 
 	/* check whether the particles are linked or not */
 	if ( !phys->isLinked ) { // destroy the interaction before calculation
-		scene->interactions->requestErase(contact);
-		return;
+		return false;
 	}
 	if ( (phys->isLinked) && (D < DFValues.back()(0)) ) { // spheres are linked but failure because of reaching maximal admissible displacement 
 		phys->isLinked=false; 
@@ -112,8 +111,7 @@ void Law2_ScGeom_WirePhys_WirePM::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& i
 		WireState* st2=dynamic_cast<WireState*>(b2->state.get());
 		st1->numBrokenLinks+=1;
 		st2->numBrokenLinks+=1;
-		scene->interactions->requestErase(contact);
-		return;
+		return false;
 	}
 	
 	/* compute normal force Fn */
@@ -145,7 +143,7 @@ void Law2_ScGeom_WirePhys_WirePM::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& i
 
 	/* compute a limit value to check how far the interaction is from failing */
 	Real limitFactor = 0.;
-	if (Fn < 0.) limitFactor = fabs(D/(DFValues.back()(0)));
+	if (Fn < 0.) limitFactor = std::abs(D/(DFValues.back()(0)));
 	phys->limitFactor = limitFactor;
 
 	State* st1 = Body::byId(id1,scene)->state.get();
@@ -163,6 +161,7 @@ void Law2_ScGeom_WirePhys_WirePM::go(shared_ptr<IGeom>& ig, shared_ptr<IPhys>& i
 	
 	/* set shear force to zero */
 	phys->shearForce = Vector3r::Zero();
+	return true;
 
 }
 
@@ -196,7 +195,7 @@ void Ip2_WireMat_WireMat_WirePhys::go(const shared_ptr<Material>& b1, const shar
 	if ( mat1->id == mat2->id ) { // interaction of two bodies of the same material
 		crossSection = mat1->as;
 		SSValues = mat1->strainStressValues;
-		if ( (mat1->isDoubleTwist) && (abs(interaction->getId1()-interaction->getId2())==1) ) {// bodies which id differs by 1 are double twisted
+		if ( (mat1->isDoubleTwist) && (std::abs(interaction->getId1()-interaction->getId2())==1) ) {// bodies which id differs by 1 are double twisted
 			contactPhysics->isDoubleTwist = true;
 			if ( mat1->type==1 || mat1->type==2 ) {
 				SSValues = mat1->strainStressValuesDT;

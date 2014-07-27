@@ -11,9 +11,7 @@
 
 #include "SimpleShear.hpp"
 
-#include <yade/pkg/dem/NormalInelasticMat.hpp>
-#include<yade/pkg/dem/NormalInelasticityLaw.hpp>
-#include <yade/pkg/dem/Ip2_2xNormalInelasticMat_NormalInelasticityPhys.hpp>
+#include <yade/pkg/dem/NormalInelasticPM.hpp>
 #include<yade/pkg/dem/GlobalStiffnessTimeStepper.hpp>
 
 #include<yade/pkg/common/Aabb.hpp>
@@ -27,21 +25,18 @@
 
 #include<yade/pkg/dem/NewtonIntegrator.hpp>
 #include<yade/pkg/common/GravityEngines.hpp>
-#include<yade/pkg/dem/KinemCTDEngine.hpp>
+#include<yade/pkg/dem/KinemC__Engine.hpp>
 
 #include<yade/pkg/dem/Ig2_Sphere_Sphere_ScGeom.hpp>
 #include<yade/pkg/dem/Ig2_Box_Sphere_ScGeom.hpp>
-#include<yade/pkg/common/Bo1_Sphere_Aabb.hpp>
-#include<yade/pkg/common/Bo1_Box_Aabb.hpp>
+#include<yade/pkg/common/Bo1_Aabb.hpp>
+#include<yade/pkg/common/Bo1_Aabb.hpp>
 
 #include<yade/core/Body.hpp>
 #include<yade/pkg/common/Box.hpp>
 #include<yade/pkg/common/Sphere.hpp>
 
-#include <boost/filesystem/convenience.hpp>
 #include <utility>
-
-using namespace std;
 
 YADE_PLUGIN((SimpleShear))
 CREATE_LOGGER(SimpleShear);
@@ -116,7 +111,7 @@ bool SimpleShear::generate(std::string& message)
 
 void SimpleShear::createSphere(shared_ptr<Body>& body, Vector3r position, Real radius)
 {
-	body = shared_ptr<Body>(new Body); body->groupMask=Body::groupMask_t(1);
+	body = shared_ptr<Body>(new Body); body->groupMask=1;
 	shared_ptr<NormalInelasticMat> mat(new NormalInelasticMat);
 	shared_ptr<Aabb> aabb(new Aabb);
 	shared_ptr<Sphere> iSphere(new Sphere);
@@ -147,7 +142,7 @@ void SimpleShear::createSphere(shared_ptr<Body>& body, Vector3r position, Real r
 
 void SimpleShear::createBox(shared_ptr<Body>& body, Vector3r position, Vector3r extents)
 {
-	body = shared_ptr<Body>(new Body); body->groupMask=Body::groupMask_t(1);
+	body = shared_ptr<Body>(new Body); body->groupMask=1;
 	shared_ptr<NormalInelasticMat> mat(new NormalInelasticMat);
 	shared_ptr<Aabb> aabb(new Aabb);
 // 	shared_ptr<BoxModel> gBox(new BoxModel);
